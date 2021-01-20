@@ -1,8 +1,6 @@
 #pragma once
 
-
 #include <string>
-#include <utility>
 
 class Debugger {
   std::string m_prog_name;
@@ -13,7 +11,7 @@ public:
 
   void run();
   void handle_command(const char* command);
-
+  void continue_execution();
 };
 
 

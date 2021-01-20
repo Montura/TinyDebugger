@@ -1,7 +1,8 @@
 #include <iostream>
 #include <unistd.h>
-#include <sys/ptrace.h>
+
 #include "debugger.h"
+#include "utils.h"
 
 int main(int argc, char** argv) {
   if (argc < 2) {
@@ -18,9 +19,8 @@ int main(int argc, char** argv) {
     // We want to replace whatever we’re currently executing with the program we want to debug.
 
     // ptrace allows us to observe and control the execution of another process by reading registers, reading memory, single stepping and more.
-    int rc = ptrace(PT_TRACE_ME, 0, nullptr, 0);
-    if (rc) {
-      std::cerr << "Got an error after ptrace(PT_TRACE_ME, 0, nullptr, 0)";
+    int hr = m_ptrace(PT_TRACE_ME, 0, nullptr, 0);
+    if (hr) {
       return -1;
     }
     execl(programm, programm, nullptr);

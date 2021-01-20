@@ -1,8 +1,10 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
+
 #include "debugger.h"
 #include "linenoise/linenoise.h"
+#include "utils.h"
 
 template <class Output>
 void split(const std::string &s, char delimiter, Output result, int count = 1) {
@@ -11,13 +13,6 @@ void split(const std::string &s, char delimiter, Output result, int count = 1) {
   for (int i = 0; std::getline(iss, item, delimiter) && i < count; ++i) {
     *result++ = item;
   }
-}
-
-bool is_prefix(const std::string& s, const std::string& of) {
-  if (s.size() > of.size()) {
-    return false;
-  }
-  return std::equal(s.begin(), s.end(), of.begin());
 }
 
 void Debugger::run() {
@@ -38,8 +33,19 @@ void Debugger::handle_command(const char* line) {
   split(line, ' ', &command);
 
   if (is_prefix(command, "continue")) {
-//    continue_execution();
+    continue_execution();
   } else {
     std::cerr << "Unknown command\n";
   }
+}
+
+void Debugger::continue_execution() {
+  int hr = m_ptrace(PT_CONTINUE, m_pid, nullptr, 0);
+  if (!hr) {
+    return;
+  }
+
+  int wait_status;
+  auto options = 0;
+  waitpid(m_pid, &wait_status, options);
 }
