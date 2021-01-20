@@ -3,13 +3,11 @@ project(debugger)
 
 set(CMAKE_CXX_STANDARD 14)
 
-set(LINENOISE_li )
-
 add_subdirectory(linenoise)
 
 add_executable(debugger main.cpp debugger.cpp)
 target_link_libraries(debugger PRIVATE linenoise)
 
-if(UNIX)
+if (UNIX)
   target_link_libraries(debugger PRIVATE "-lpthread")
 endif()
