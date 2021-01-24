@@ -19,10 +19,9 @@ int main(int argc, char** argv) {
     std::cout << "Hello from debugee, pid " << getpid() << "\n";
     personality(ADDR_NO_RANDOMIZE);
 
-    // We want to replace whatever we’re currently executing with the program we want to debug.
-
-    // ptrace allows us to observe and control the execution of another process by reading registers, reading memory, single stepping and more.
-    long hr = m_ptrace(PT_TRACE_ME, 0, nullptr, 0);
+    // ptrace allows us to observe and control the execution of another process by reading registers,
+    // reading memory, single stepping and more.
+    m_ptrace(PT_TRACE_ME, 0, nullptr, 0);
     execl(programm, programm, nullptr);
   } else if (pid >= 1)  {
     // we're in the parent process execute debugger
