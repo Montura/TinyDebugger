@@ -70,3 +70,11 @@ void Debugger<AddrT>::set_breakpoint_at_address(AddrT addr) {
   m_breakpoints[addr] = bp;
 //  std::cout << "Added break point bp " << bp.get_address() << ", map size = " << m_breakpoints.size() << "\n";
 }
+
+template <class AddrT>
+void Debugger<AddrT>::dispose()  {
+  for (auto & break_point : m_breakpoints) {
+    break_point.second.disable();
+  }
+  m_breakpoints.clear();
+}

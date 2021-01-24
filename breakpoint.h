@@ -6,9 +6,9 @@
 template<class AddrT>
 class BreakPoint {
 public:
-  BreakPoint() = default;
+  BreakPoint() : m_pid(0), m_addr(0), m_enabled(false), m_saved_data(0) {};
   BreakPoint(pid_t pid, AddrT addr)
-      : m_pid{pid}, m_addr{addr}, m_enabled{false}, m_saved_data{}
+      : m_pid(pid), m_addr(addr), m_enabled(false), m_saved_data(0)
   {}
 
   void enable();
