@@ -40,6 +40,8 @@ void Debugger::handle_command(const char* line) {
 }
 
 void Debugger::continue_execution() {
+  // MacOS: error =  Operation not supported, request = 7, pid = 31429, addr = Segmentation fault: 11
+  // Possible way to fix https://www.jetbrains.com/help/clion/attaching-to-local-process.html#prereq-ubuntu (solution for Ubuntu)
   int hr = m_ptrace(PT_CONTINUE, m_pid, nullptr, 0);
   if (!hr) {
     return;
