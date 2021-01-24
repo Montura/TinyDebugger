@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 add_subdirectory(linenoise)
 
-add_executable(debugger main.cpp debugger.cpp utils.cpp)
+add_executable(debugger main.cpp debugger.cpp utils.cpp breakpoint.cpp)
 target_link_libraries(debugger PRIVATE linenoise)
 
 if (UNIX)
