@@ -1,6 +1,11 @@
 #include "breakpoint.h"
 #include "utils.h"
 
+#if __APPLE__
+#define PTRACE_PEEKDATA PT_READ_D
+#define PTRACE_POKEDATA PT_WRITE_D
+#endif
+
 template<class T>
 void BreakPoint<T>::enable() {
   auto data = m_ptrace(PTRACE_PEEKDATA, m_pid, m_addr, 0);

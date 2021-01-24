@@ -26,7 +26,7 @@ bool is_prefix(const std::string& s, const std::string& of) {
     return res;
   }
 #elif __APPLE__
-  int m_ptrace(int request, pid_t m_pid, caddr_t addr, int data) {
+  int m_ptrace(int request, pid_t m_pid, caddr_t addr, uint64_t data) {
     int hr = ptrace(request, m_pid, addr, data);
     if (hr == -1) {
       std::cerr << "Oh dear, something went wrong with" << __PRETTY_FUNCTION__

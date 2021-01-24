@@ -1,7 +1,9 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#if __linux__
 #include <wait.h>
+#endif
 
 #include "linenoise/linenoise.h"
 #include "debugger.h"
