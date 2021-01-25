@@ -18,7 +18,7 @@ bool is_prefix(const std::string& s, const std::string& of) {
                 << ", error =  " << strerror(errno)
                 << ", request = " << request
                 << ", pid = " << m_pid
-                << ", addr = " << addr << "\n";
+                << ", addr = " << (void*)addr << "\n";
       exit(res);
     } else {
       std::cout << "Good with ptrace, res = " << res << "\n";
