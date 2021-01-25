@@ -3,9 +3,6 @@
 
 #if __linux__
   #include <sys/personality.h>
-   typedef void* AddrT;
-#elif __APPLE__
-  typedef caddr_t AddrT;
 #endif
 
 #include "debugger.h"
