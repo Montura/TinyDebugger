@@ -11,7 +11,7 @@ bool is_prefix(const std::string& s, const std::string& of) {
 }
 
 #if __linux__
-  long m_ptrace(__ptrace_request request, pid_t m_pid, void* addr, uint64_t data) {
+  long m_ptrace(__ptrace_request request, pid_t m_pid, uint64_t addr, uint64_t data) {
     long res = ptrace(request, m_pid, addr, data);
     if (res == -1) {
       std::cerr << "Oh dear, something went wrong with" << __PRETTY_FUNCTION__
@@ -26,19 +26,19 @@ bool is_prefix(const std::string& s, const std::string& of) {
     return res;
   }
 #elif __APPLE__
-  int m_ptrace(int request, pid_t m_pid, caddr_t addr, uint64_t data) {
-    int hr = ptrace(request, m_pid, addr, data);
-    if (hr == -1) {
+  long m_ptrace(int request, pid_t m_pid, uint64_t addr, uint64_t data) {
+    int res = ptrace(request, m_pid, reinterpret_cast<caddr_t>(addr), data);
+    if (res == -1) {
       std::cerr << "Oh dear, something went wrong with" << __PRETTY_FUNCTION__
                 << ", error =  " << strerror(errno)
                 << ", request = " << request
                 << ", pid = " << m_pid
                 << ", addr = " << addr << "\n";
-      return hr;
+      exit(res);
     } else {
-      std::cout << "Good with ptrace, hr = " << hr << "\n";
+      std::cout << "Good with ptrace, res = " << res << "\n";
     }
-    return 0;
+    return res;
   }
 
 #endif

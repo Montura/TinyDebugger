@@ -3,14 +3,12 @@
 #include <unordered_map>
 
 #include "breakpoint.h"
-#include "breakpoint.cpp"
 
-template<class AddrT>
 class Debugger {
   std::string m_prog_name;
   pid_t m_pid;
 
-  std::unordered_map<AddrT, BreakPoint<AddrT>> m_breakpoints;
+  std::unordered_map<uint64_t, BreakPoint> m_breakpoints;
 
 public:
   Debugger(std::string prog_name, pid_t pid): m_prog_name(std::move(prog_name)), m_pid(pid) {}
@@ -18,7 +16,7 @@ public:
   void run();
   void handle_command(const char* command);
   void continue_execution();
-  void set_breakpoint_at_address(AddrT addr);
+  void set_breakpoint_at_address(uint64_t addr);
   void dispose();
 
   ~Debugger() {

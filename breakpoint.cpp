@@ -6,8 +6,7 @@
 #define PTRACE_POKEDATA PT_WRITE_D
 #endif
 
-template<class T>
-void BreakPoint<T>::enable() {
+void BreakPoint::enable() {
   auto data = m_ptrace(PTRACE_PEEKDATA, m_pid, m_addr, 0);
   if (data) {
     m_saved_data = static_cast<uint8_t>(data & 0xff); //save bottom byte
@@ -19,8 +18,7 @@ void BreakPoint<T>::enable() {
   }
 }
 
-template<class T>
-void BreakPoint<T>::disable() {
+void BreakPoint::disable() {
   auto data = m_ptrace(PTRACE_PEEKDATA, m_pid, m_addr, 0);
   auto restored_data = ((data & ~0xff) | m_saved_data);
   m_ptrace(PTRACE_POKEDATA, m_pid, m_addr, restored_data);

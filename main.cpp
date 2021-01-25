@@ -3,13 +3,12 @@
 
 #if __linux__
   #include <sys/personality.h>
-  typedef void* AddrT;
+   typedef void* AddrT;
 #elif __APPLE__
   typedef caddr_t AddrT;
 #endif
 
 #include "debugger.h"
-#include "debugger.cpp"
 #include "utils.h"
 
 int main(int argc, char** argv) {
@@ -28,12 +27,12 @@ int main(int argc, char** argv) {
 #endif
     // ptrace allows us to observe and control the execution of another process by reading registers,
     // reading memory, single stepping and more.
-    m_ptrace(PT_TRACE_ME, 0, nullptr, 0);
+    m_ptrace(PT_TRACE_ME, 0, 0, 0);
     execl(programm, programm, nullptr);
   } else if (pid >= 1)  {
     // we're in the parent process execute debugger
     std::cout << "Hello from debugger, pid " << getpid() << ", started debugging process " << pid << '\n';
-    Debugger<AddrT> dbg { programm, pid };
+    Debugger dbg { programm, pid };
     dbg.run();
   }
   return 0;

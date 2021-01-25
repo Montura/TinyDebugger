@@ -18,8 +18,7 @@ void split(const std::string &s, char delimiter, Output result) {
   }
 }
 
-template <class AddrT>
-void Debugger<AddrT>::run() {
+void Debugger::run() {
   int wait_status;
   auto options = 0;
   std::cout << "Debugger::run -> Before waitpid() on pid = " << m_pid << "\n";
@@ -34,8 +33,7 @@ void Debugger<AddrT>::run() {
   }
 }
 
-template <class AddrT>
-void Debugger<AddrT>::handle_command(const char* line) {
+void Debugger::handle_command(const char* line) {
   std::vector<std::string> args;
   split(line, ' ', std::back_inserter(args));
 //  std::cout << "Size of args:" << args.size() << "\n";
@@ -45,34 +43,31 @@ void Debugger<AddrT>::handle_command(const char* line) {
     continue_execution();
   } else if(is_prefix(command, "break")) {
     std::string addr {args[1], 2}; // naively assume that the user has written 0xADDRESS
-    set_breakpoint_at_address(reinterpret_cast<AddrT>(std::stol(addr, 0, 16)));
+    set_breakpoint_at_address(std::stol(addr, 0, 16));
   } else {
     std::cerr << "Unknown command\n";
   }
 }
 
-template <class AddrT>
-void Debugger<AddrT>::continue_execution() {
+void Debugger::continue_execution() {
   // MacOS: error =  Operation not supported, request = 7, pid = 31429, addr = Segmentation fault: 11
   // Possible way to fix https://www.jetbrains.com/help/clion/attaching-to-local-process.html#prereq-ubuntu (solution for Ubuntu)
-  m_ptrace(PT_CONTINUE, m_pid, nullptr, 0);
+  m_ptrace(PT_CONTINUE, m_pid, 0, 0);
 
   int wait_status;
   auto options = 0;
   waitpid(m_pid, &wait_status, options);
 }
 
-template <class AddrT>
-void Debugger<AddrT>::set_breakpoint_at_address(AddrT addr) {
+void Debugger::set_breakpoint_at_address(uint64_t addr) {
   std::cout << "Set BreakPoint at address " << std::hex << addr << std::endl;
-  BreakPoint<AddrT> bp {m_pid, addr};
+  BreakPoint bp {m_pid, addr};
   bp.enable();
   m_breakpoints[addr] = bp;
 //  std::cout << "Added break point bp " << bp.get_address() << ", map size = " << m_breakpoints.size() << "\n";
 }
 
-template <class AddrT>
-void Debugger<AddrT>::dispose()  {
+void Debugger::dispose()  {
   for (auto & break_point : m_breakpoints) {
     break_point.second.disable();
   }
