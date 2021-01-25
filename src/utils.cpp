@@ -11,17 +11,17 @@ bool is_prefix(const std::string& s, const std::string& of) {
 }
 
 #if __linux__
-  long m_ptrace(__ptrace_request request, pid_t m_pid, uint64_t addr, uint64_t data) {
-    long res = ptrace(request, m_pid, addr, data);
+uint64_t m_ptrace(__ptrace_request request, pid_t m_pid, uint64_t addr, uint64_t* data) {
+  uint64_t res = ptrace(request, m_pid, addr, data);
     if (res == -1) {
       std::cerr << "Oh dear, something went wrong with" << __PRETTY_FUNCTION__
                 << ", error =  " << strerror(errno)
                 << ", request = " << request
                 << ", pid = " << m_pid
-                << ", addr = " << (void*)addr << "\n";
+                << ", addr = " << reinterpret_cast<void*>(addr) << "\n";
       exit(res);
     } else {
-      std::cout << "Good with ptrace, res = " << res << "\n";
+//      std::cout << "Good with ptrace, res = " << res << "\n";
     }
     return res;
   }

@@ -20,5 +20,5 @@ private:
   pid_t m_pid;
   uint64_t m_addr;
   bool m_enabled;
-  uint8_t m_saved_data; //data which used to be at the BreakPoint address
+  uint8_t m_saved_data; // data which used to be at the BreakPoint address
 };

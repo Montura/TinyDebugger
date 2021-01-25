@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(debugger)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 add_subdirectory(linenoise)
 
@@ -11,6 +11,7 @@ set(SOURCE_FILES
     src/debugger.cpp
     src/utils.cpp
     src/breakpoint.cpp
+    src/registers.cpp
 )
 
 add_executable(debugger ${SOURCE_FILES})

@@ -3,11 +3,14 @@
 #include <vector>
 #if __linux__
 #include <wait.h>
+#include <iomanip>
+
 #endif
 
 #include "linenoise.h"
 #include "debugger.h"
 #include "utils.h"
+#include "registers.h"
 
 template <class Output>
 void split(const std::string &s, char delimiter, Output result) {
@@ -44,6 +47,16 @@ void Debugger::handle_command(const char* line) {
   } else if(is_prefix(command, "break")) {
     std::string addr {args[1], 2}; // naively assume that the user has written 0xADDRESS
     set_breakpoint_at_address(std::stol(addr, 0, 16));
+  } else if (is_prefix(command, "register")) {
+    if (is_prefix(args[1], "dump")) {
+      dump_registers();
+    } else if (is_prefix(args[1], "read")) {
+      std::cout << getRegisterValue(m_pid, getRegisterFromName(args[2])) << std::endl;
+    } else if (is_prefix(args[1], "write")) {
+      std::string val{args[3], 2}; //assume 0xVAL
+      setRegisterValue(m_pid, getRegisterFromName(args[2]), std::stol(val, 0, 16));
+    }
+
   } else {
     std::cerr << "Unknown command\n";
   }
@@ -72,4 +85,12 @@ void Debugger::dispose()  {
     break_point.second.disable();
   }
   m_breakpoints.clear();
+}
+
+void Debugger::dump_registers() {
+  for (const auto& rd : globalRegisterDescriptors) {
+    std::cout << rd.name << " 0x" << std::setfill('0') << std::setw(16)
+              << std::hex << getRegisterValue(m_pid, rd.r)
+              << std::endl;
+  }
 }

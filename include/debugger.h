@@ -18,6 +18,7 @@ public:
   void continue_execution();
   void set_breakpoint_at_address(uint64_t addr);
   void dispose();
+  void dump_registers();
 
   ~Debugger() {
     dispose();
