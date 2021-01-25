@@ -5,7 +5,7 @@
 #include <wait.h>
 #endif
 
-#include "linenoise/linenoise.h"
+#include "linenoise.h"
 #include "debugger.h"
 #include "utils.h"
 

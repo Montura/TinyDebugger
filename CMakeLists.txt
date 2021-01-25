@@ -5,9 +5,17 @@ set(CMAKE_CXX_STANDARD 14)
 
 add_subdirectory(linenoise)
 
-add_executable(debugger main.cpp debugger.cpp utils.cpp breakpoint.cpp)
+include_directories(${PROJECT_NAME} include linenoise/include)
+set(SOURCE_FILES
+    src/main.cpp
+    src/debugger.cpp
+    src/utils.cpp
+    src/breakpoint.cpp
+)
+
+add_executable(debugger ${SOURCE_FILES})
 target_link_libraries(debugger PRIVATE linenoise)
 
 if (UNIX)
   target_link_libraries(debugger PRIVATE "-lpthread")
-endif()
+endif ()

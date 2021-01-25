@@ -4,5 +4,8 @@ project(linenoise)
 
 set(CMAKE_C_STANDARD 11)
 
-add_library(${PROJECT_NAME} STATIC linenoise.c)
+include_directories(${PROJECT_NAME} include)
+set(SOURCE_FILES src/linenoise.c)
+
+add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
 add_library(linenoise ALIAS ${PROJECT_NAME})
