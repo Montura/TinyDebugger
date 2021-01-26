@@ -7,21 +7,29 @@
 #endif
 
 void BreakPoint::enable() {
-  uint64_t data = m_ptrace(PTRACE_PEEKDATA, m_pid, m_addr, nullptr);
+  uint64_t data = read_memory(m_addr);
   if (data) {
     m_saved_data = static_cast<uint8_t>(data & 0xff); //save bottom byte
     uint64_t int3 = 0xcc;
     uint64_t data_with_int3 = ((data & ~0xff) | int3); //set bottom byte to 0xcc
-    m_ptrace(PTRACE_POKEDATA, m_pid, m_addr, reinterpret_cast<uint64_t*>(data_with_int3));
+    write_memory(m_addr, data_with_int3);
 
     m_enabled = true;
   }
 }
 
 void BreakPoint::disable() {
-  uint64_t data = m_ptrace(PTRACE_PEEKDATA, m_pid, m_addr, 0);
+  uint64_t data = read_memory(m_addr);
   uint64_t restored_data = ((data & ~0xff) | m_saved_data);
-  m_ptrace(PTRACE_POKEDATA, m_pid, m_addr, reinterpret_cast<uint64_t*>(restored_data));
+  write_memory(m_addr, restored_data);
 
   m_enabled = false;
+}
+
+uint64_t BreakPoint::read_memory(uint64_t address) {
+  return m_ptrace(PTRACE_PEEKDATA, m_pid, address, nullptr);
+}
+
+void BreakPoint::write_memory(uint64_t address, uint64_t value) {
+  m_ptrace(PTRACE_POKEDATA, m_pid, address, reinterpret_cast<uint64_t*>(value));
 }

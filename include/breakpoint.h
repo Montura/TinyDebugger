@@ -13,6 +13,9 @@ public:
   void enable();
   void disable();
 
+  uint64_t read_memory(uint64_t address);
+  void write_memory(uint64_t address, uint64_t value);
+
   auto is_enabled() const -> bool { return m_enabled; }
   auto get_address() const -> uint64_t { return m_addr; }
 
