@@ -8,7 +8,7 @@
 
 #include "linenoise.h"
 #include "debugger.h"
-#include "utils.h"
+#include "ptrace_impl.h"
 #include "registers.h"
 
 template <class Output>
@@ -18,6 +18,19 @@ void split(const std::string &s, char delimiter, Output result) {
   for (int i = 0; std::getline(iss, item, delimiter); ++i) {
     *result++ = item;
   }
+}
+
+bool is_prefix(const std::string& s, const std::string& of) {
+  if (s.size() > of.size()) {
+    return false;
+  }
+  return !s.empty() && std::equal(s.begin(), s.end(), of.begin());
+}
+
+// Assume that the user has written 0xADDRESS (arg = 0xADDRESS)
+uint64_t Debugger::convert_arg_to_hex_address(const std::string& arg) {
+  std::string addr { arg, 2 }; // Cut 0x from the address;
+  return std::stol(addr, nullptr, 16);
 }
 
 void Debugger::run() {
@@ -42,26 +55,27 @@ void Debugger::handle_command(const char* line) {
   if (is_prefix(command, "continue")) {
     continue_execution();
   } else if(is_prefix(command, "break")) {
-    std::string addr {args[1], 2}; // naively assume that the user has written 0xADDRESS
-    set_breakpoint_at_address(std::stol(addr, 0, 16));
+    set_breakpoint_at_address(convert_arg_to_hex_address(args[1]));
   } else if (is_prefix(command, "register")) {
     if (is_prefix(args[1], "dump")) {
       dump_registers();
     } else if (is_prefix(args[1], "read")) {
       std::cout << getRegisterValue(m_pid, getRegisterFromName(args[2])) << std::endl;
-    } else if (is_prefix(args[1], "write")) {
-      std::string val{args[3], 2}; //assume 0xVAL
-      setRegisterValue(m_pid, getRegisterFromName(args[2]), std::stol(val, 0, 16));
+    } else if (is_prefix(args[1], "write")) {   // assume 0xVAL
+      setRegisterValue(m_pid,
+                       getRegisterFromName(args[2]),
+                       convert_arg_to_hex_address(args[3]));
     }
   } else if (is_prefix(command, "memory")) {
-    std::string addr{args[2], 2}; //assume 0xADDRESS
-
     if (is_prefix(args[1], "read")) {
-      std::cout << std::hex << read_memory(std::stol(addr, 0, 16)) << std::endl;
+      std::cout << std::hex
+      << Ptrace::read_memory(m_pid, convert_arg_to_hex_address(args[2]))
+      << std::endl;
     }
     if (is_prefix(args[1], "write")) {
-      std::string val{args[3], 2}; //assume 0xVAL
-      write_memory(std::stol(addr, 0, 16), std::stol(val, 0, 16));
+      Ptrace::write_memory(m_pid,
+                           convert_arg_to_hex_address(args[2]),
+                           convert_arg_to_hex_address(args[3]));
     }
   } else {
     std::cerr << "Unknown command\n";
@@ -72,7 +86,7 @@ void Debugger::continue_execution() {
   step_over_breakpoint();
   // MacOS: error =  Operation not supported, request = 7, pid = 31429, addr = Segmentation fault: 11
   // Possible way to fix https://www.jetbrains.com/help/clion/attaching-to-local-process.html#prereq-ubuntu (solution for Ubuntu)
-  m_ptrace(PT_CONTINUE, m_pid, 0, 0);
+  Ptrace::continue_exec(m_pid);
   wait_for_signal();
 }
 
@@ -99,14 +113,6 @@ void Debugger::dump_registers() {
   }
 }
 
-uint64_t Debugger::read_memory(uint64_t address) {
-  return m_ptrace(PTRACE_PEEKDATA, m_pid, address, nullptr);
-}
-
-void Debugger::write_memory(uint64_t address, uint64_t value) {
-  m_ptrace(PTRACE_POKEDATA, m_pid, address, reinterpret_cast<uint64_t*>(value));
-}
-
 uint64_t Debugger::get_pc() {
   return getRegisterValue(m_pid, Reg::rip);
 }
@@ -127,7 +133,7 @@ void Debugger::step_over_breakpoint() {
       set_pc(previous_instruction_address);
 
       bp.disable();
-      ptrace(PTRACE_SINGLESTEP, m_pid, nullptr, nullptr);
+      Ptrace::single_step(m_pid);
       wait_for_signal();
       bp.enable();
     }

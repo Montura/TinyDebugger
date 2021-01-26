@@ -9,7 +9,7 @@ include_directories(${PROJECT_NAME} include linenoise/include)
 set(SOURCE_FILES
     src/main.cpp
     src/debugger.cpp
-    src/utils.cpp
+    src/ptrace_impl.cpp
     src/breakpoint.cpp
     src/registers.cpp
 )

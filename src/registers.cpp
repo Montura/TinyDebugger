@@ -5,7 +5,7 @@
 #include <sys/user.h>
 
 #include "registers.h"
-#include "utils.h"
+#include "ptrace_impl.h"
 
 uint64_t* getUserRegisterByOffset(user_regs_struct& userRegs, const RegDescriptor* const pos) {
   return reinterpret_cast<uint64_t*>(&userRegs) + (pos - globalRegisterDescriptors.begin());
@@ -24,7 +24,7 @@ const RegDescriptor* findRegDescInGlobalRegisterTable(LambdaPredicate const& pre
 }
 
 uint64_t* findRegInUserRegisterTable(pid_t pid, const Reg& r,user_regs_struct& userRegs) {
-  m_ptrace(PTRACE_GETREGS, pid, 0, reinterpret_cast<uint64_t*>(&userRegs));
+  Ptrace::get_registers(pid, &userRegs);
   const LambdaPredicate& predicate =
       [r](auto&& rd) {
         return rd.r == r;
@@ -44,7 +44,7 @@ void setRegisterValue(pid_t pid, Reg const& r, uint64_t value) {
   uint64_t* pUserRegister = findRegInUserRegisterTable(pid, r, userRegs);
 
   *pUserRegister = value;
-  m_ptrace(PTRACE_SETREGS, pid, 0, reinterpret_cast<uint64_t*>(&userRegs));
+  Ptrace::set_registers(pid, &userRegs);
 }
 
 uint64_t getRegisterValueFromDwarfRegister(pid_t pid, int regDwarfValue) {

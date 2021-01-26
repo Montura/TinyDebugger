@@ -6,7 +6,7 @@
 #endif
 
 #include "debugger.h"
-#include "utils.h"
+#include "ptrace_impl.h"
 
 int main(int argc, char** argv) {
   if (argc < 2) {
@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
 #endif
     // ptrace allows us to observe and control the execution of another process by reading registers,
     // reading memory, single stepping and more.
-    m_ptrace(PT_TRACE_ME, 0, 0, 0);
+    Ptrace::trace_me();
     execl(programm, programm, nullptr);
   } else if (pid >= 1)  {
     // we're in the parent process execute debugger
