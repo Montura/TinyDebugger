@@ -4,9 +4,9 @@ project(debugger)
 set(CMAKE_CXX_STANDARD 17)
 
 add_subdirectory(linenoise)
-#add_subdirectory(libelfin)
+add_subdirectory(libelfin)
 
-include_directories(${PROJECT_NAME} include linenoise/include)
+include_directories(${PROJECT_NAME} include linenoise/include libelfin/dwarf libelfin/elf)
 set(SOURCE_FILES
     src/main.cpp
     src/debugger.cpp

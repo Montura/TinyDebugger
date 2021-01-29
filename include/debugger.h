@@ -1,8 +1,13 @@
 #pragma once
 
 #include <unordered_map>
+#include <fcntl.h>
+#include <unistd.h>
+#include <csignal>
 
 #include "breakpoint.h"
+#include "internal.hh"
+#include "elf++.hh"
 
 class Debugger {
   std::string m_prog_name;
@@ -10,12 +15,14 @@ class Debugger {
 
   std::unordered_map<uint64_t, BreakPoint> m_breakpoints;
 
-public:
-  Debugger(std::string prog_name, pid_t pid): m_prog_name(std::move(prog_name)), m_pid(pid) {}
+  dwarf::dwarf m_dwarf;
+  elf::elf m_elf;
+  int file_descriptor;
+  uint64_t m_load_address;
 
-  ~Debugger() {
-    dispose();
-  }
+public:
+  Debugger(std::string prog_name, pid_t pid);
+  ~Debugger();
 
   void dispose();
 
@@ -32,4 +39,20 @@ public:
   void set_pc(uint64_t pc);
 
   static uint64_t convert_arg_to_hex_address(const std::string& arg);
+
+  // DWARF ->  standardized debugging data format
+  // ELF -> Executable and Linkage Format:
+  //    1. http://www.skyfree.org/linux/references/ELF_Format.pdf
+  //    2. https://raw.githubusercontent.com/corkami/pics/master/binary/elf101/elf101-64.pdf
+  // DIE -> DWARF Information Entry:
+  //    1. http://www.dwarfstd.org/doc/Debugging%20using%20DWARF-2012.pdf
+  //    2. https://blog.tartanllama.xyz/writing-a-linux-debugger-elf-dwarf/
+  dwarf::die get_function_from_pc(uint64_t pc);
+  dwarf::line_table::iterator get_line_entry_from_pc(uint64_t pc);
+
+  void initialize_load_address();
+  uint64_t offset_load_address(uint64_t addr);
+  void print_source(const std::string& file_name, uint32_t line, uint32_t n_lines_context);
+  siginfo_t get_signal_info();
+  void handle_sigtrap(siginfo_t const& info);
 };

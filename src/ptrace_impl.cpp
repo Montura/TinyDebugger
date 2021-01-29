@@ -47,6 +47,10 @@ void Ptrace::set_registers(uint64_t pid, user_regs_struct* user_regs) {
   m_ptrace(PTRACE_SETREGS, pid, 0, reinterpret_cast<uint64_t*>(user_regs));
 }
 
+void Ptrace::get_sig_info(uint64_t pid, siginfo_t* info) {
+  ptrace(PTRACE_GETSIGINFO, pid, nullptr, reinterpret_cast<uint64_t*>(info));
+}
+
 #elif __APPLE__
   long m_ptrace(int request, pid_t m_pid, uint64_t addr, uint64_t data) {
     int res = ptrace(request, m_pid, reinterpret_cast<caddr_t>(addr), data);

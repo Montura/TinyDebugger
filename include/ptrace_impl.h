@@ -2,6 +2,7 @@
 
 #include <sys/ptrace.h>
 #include <sys/user.h>
+#include <csignal>
 
 namespace Ptrace {
   void trace_me();
@@ -12,4 +13,6 @@ namespace Ptrace {
 
   void get_registers(uint64_t pid, user_regs_struct* user_regs);
   void set_registers(uint64_t pid, user_regs_struct* user_regs);
+
+  void get_sig_info(uint64_t pid, siginfo_t* info);
 }

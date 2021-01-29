@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <iomanip>
+#include <fstream>
 
 #if __linux__
   #include <wait.h>
@@ -27,6 +28,25 @@ bool is_prefix(const std::string& s, const std::string& of) {
   return !s.empty() && std::equal(s.begin(), s.end(), of.begin());
 }
 
+Debugger::Debugger(std::string prog_name, pid_t pid) :
+    m_prog_name(std::move(prog_name)),
+    m_pid(pid),
+    m_load_address(0)
+{
+  // open is used instead of std::ifstream because the elf loader needs a UNIX file descriptor to pass
+  // to mmap so that it can map the file into memory rather than reading it a bit at a time.
+  file_descriptor = open(m_prog_name.c_str(), O_RDONLY);
+
+  // g++ -g helloworld.cpp -o helloworld (-g for generating DWARF)
+  m_elf = elf::elf{elf::create_mmap_loader(file_descriptor)};
+  m_dwarf = dwarf::dwarf{dwarf::elf::create_loader(m_elf)};
+}
+
+Debugger::~Debugger() {
+  dispose();
+  close(file_descriptor);
+}
+
 // Assume that the user has written 0xADDRESS (arg = 0xADDRESS)
 uint64_t Debugger::convert_arg_to_hex_address(const std::string& arg) {
   std::string addr { arg, 2 }; // Cut 0x from the address;
@@ -36,6 +56,7 @@ uint64_t Debugger::convert_arg_to_hex_address(const std::string& arg) {
 void Debugger::run() {
   std::cout << "Debugger::run -> Before waitpid() on pid = " << m_pid << "\n";
   wait_for_signal();
+  initialize_load_address();
   std::cout << "Debugger::run -> After waitpid() on pid = " << m_pid << "\n";
 
   char* line;
@@ -122,16 +143,10 @@ void Debugger::set_pc(uint64_t pc) {
 }
 
 void Debugger::step_over_breakpoint() {
-  // - 1 because execution will go past the breakpoint
-  auto possible_breakpoint_location = get_pc() - 1;
-
-  if (m_breakpoints.count(possible_breakpoint_location)) {
-    auto& bp = m_breakpoints[possible_breakpoint_location];
-
+  const uint64_t pc = get_pc();
+  if (m_breakpoints.count(pc)) {
+    auto& bp = m_breakpoints[pc];
     if (bp.is_enabled()) {
-      auto previous_instruction_address = possible_breakpoint_location;
-      set_pc(previous_instruction_address);
-
       bp.disable();
       Ptrace::single_step(m_pid);
       wait_for_signal();
@@ -144,4 +159,128 @@ void Debugger::wait_for_signal() {
   int wait_status;
   auto options = 0;
   waitpid(m_pid, &wait_status, options);
+
+  auto siginfo = get_signal_info();
+
+  switch (siginfo.si_signo) {
+    case SIGTRAP:
+      handle_sigtrap(siginfo);
+      break;
+    case SIGSEGV:
+      std::cout << "Yay, segfault. Reason: " << siginfo.si_code << std::endl;
+      break;
+    default:
+      std::cout << "Got signal " << strsignal(siginfo.si_signo) << std::endl;
+  }
+}
+
+dwarf::die Debugger::get_function_from_pc(uint64_t pc) {
+  // We find the correct compilation unit, then ask the line table to get us the relevant entry.
+  for (const auto &compilationUnit : m_dwarf.compilation_units()) {
+    if (die_pc_range(compilationUnit.root()).contains(pc)) {
+      for (const auto& die : compilationUnit.root()) {
+        if (die.tag == dwarf::DW_TAG::subprogram) {
+          if (die_pc_range(die).contains(pc)) {
+            return die;
+          }
+        }
+      }
+    }
+  }
+  throw std::out_of_range{"Cannot find function"};
+}
+
+dwarf::line_table::iterator Debugger::get_line_entry_from_pc(uint64_t pc) {
+  for (auto &compilationUnit : m_dwarf.compilation_units()) {
+    if (die_pc_range(compilationUnit.root()).contains(pc)) {
+      const auto &tableLine = compilationUnit.get_line_table();
+      auto it = tableLine.find_address(pc);
+      if (it == tableLine.end()) {
+        throw std::out_of_range { "Cannot find line entry" };
+      } else {
+        return it;
+      }
+    }
+  }
+
+  throw std::out_of_range { "Cannot find line entry" };
+}
+
+void Debugger::initialize_load_address() {
+  // If this is a dynamic library (e.g. PIE)
+  if (m_elf.get_hdr().type == elf::et::dyn) {
+    // The load address is found in /proc/pid/maps
+    std::ifstream map("/proc/" + std::to_string(m_pid) + "/maps");
+
+    // Read the first address from the file
+    std::string addr;
+    std::getline(map, addr, '-');
+
+    m_load_address = std::stol(addr, nullptr, 16);
+  }
+}
+
+uint64_t Debugger::offset_load_address(uint64_t addr) {
+  return addr - m_load_address;
+}
+// todo: check the value of n_lines_context
+void Debugger::print_source(const std::string& file_name, uint32_t line, uint32_t n_lines_context = 2) {
+  std::ifstream file { file_name };
+
+  // Work out a window around the desired line
+  uint32_t start_line = (line <= n_lines_context) ? 1 : line - n_lines_context;
+  uint32_t end_line = line + n_lines_context + (line < n_lines_context ? n_lines_context - line : 0) + 1;
+
+  char c = 0;
+  uint32_t current_line = 1;
+  // Skip lines up until start_line
+  while (current_line != start_line && file.get(c)) {
+    if (c == '\n') {
+      ++current_line;
+    }
+  }
+
+  // Output cursor if we're at the current line
+  std::cout << (current_line==line ? "> " : "  ");
+
+  // Write lines up until end_line
+  while (current_line <= end_line && file.get(c)) {
+    std::cout << c;
+    if (c == '\n') {
+      ++current_line;
+      // Output cursor if we're at the current line
+      std::cout << (current_line==line ? "> " : "  ");
+    }
+  }
+
+  // Write newline and make sure that the stream is flushed properly
+  std::cout << std::endl;
+}
+
+siginfo_t Debugger::get_signal_info() {
+  siginfo_t info;
+  Ptrace::get_sig_info(m_pid, &info);
+  return info;
+}
+
+void Debugger::handle_sigtrap(siginfo_t const& info) {
+  switch (info.si_code) {
+    // one of these will be set if a breakpoint was hit
+    case SI_KERNEL:
+    case TRAP_BRKPT:
+    {
+      set_pc(get_pc() - 1); // put the pc back where it should be
+      std::cout << "Hit breakpoint at address 0x" << std::hex << get_pc() << std::endl;
+      auto offset_pc = offset_load_address(get_pc()); // remember to offset the pc for querying DWARF
+      auto line_entry = get_line_entry_from_pc(offset_pc);
+      print_source(line_entry->file->path, line_entry->line);
+      return;
+    }
+      // this will be set if the signal was sent by single stepping
+    case TRAP_TRACE:
+      return;
+    default:
+      std::cout << "Unknown SIGTRAP code " << info.si_code << std::endl;
+      return;
+  }
 }
