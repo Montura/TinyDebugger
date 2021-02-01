@@ -58,6 +58,7 @@ void Debugger::run() {
   wait_for_signal();
   initialize_load_address();
   std::cout << "Debugger::run -> After waitpid() on pid = " << m_pid << "\n";
+  std::cout << "Debugee loaded at the address: " << (void*)m_load_address << "\n";
 
   char* line;
   while ((line = linenoise("minidbg> ")) != nullptr) {
@@ -81,10 +82,10 @@ void Debugger::handle_command(const char* line) {
     if (is_prefix(args[1], "dump")) {
       dump_registers();
     } else if (is_prefix(args[1], "read")) {
-      std::cout << getRegisterValue(m_pid, getRegisterFromName(args[2])) << std::endl;
+      std::cout << getRegisterValue(m_pid, getRegisterByName(args[2])) << std::endl;
     } else if (is_prefix(args[1], "write")) {   // assume 0xVAL
       setRegisterValue(m_pid,
-                       getRegisterFromName(args[2]),
+                       getRegisterByName(args[2]),
                        convert_arg_to_hex_address(args[3]));
     }
   } else if (is_prefix(command, "memory")) {
@@ -98,6 +99,16 @@ void Debugger::handle_command(const char* line) {
                            convert_arg_to_hex_address(args[2]),
                            convert_arg_to_hex_address(args[3]));
     }
+  } else if(is_prefix(command, "stepi")) {
+    single_step_instruction_with_breakpoint_check();
+    auto line_entry = get_line_entry_from_pc(get_pc());
+    print_source(line_entry->file->path, line_entry->line);
+  } else if(is_prefix(command, "step")) {
+    step_in();
+  } else if(is_prefix(command, "next")) {
+    step_over();
+  } else if(is_prefix(command, "finish")) {
+    step_out();
   } else {
     std::cerr << "Unknown command\n";
   }
@@ -135,17 +146,20 @@ void Debugger::dump_registers() {
 }
 
 uint64_t Debugger::get_pc() {
-  return getRegisterValue(m_pid, Reg::rip);
+  const uint64_t value = getRegisterValue(m_pid, Reg::rip);
+  std::cout << "get_pc, pc = " << value << "\n";
+  return value;
 }
 
 void Debugger::set_pc(uint64_t pc) {
+  std::cout << "set_pc, pc = " << pc << "\n";
   setRegisterValue(m_pid, Reg::rip, pc);
 }
 
 void Debugger::step_over_breakpoint() {
-  const uint64_t pc = get_pc();
-  if (m_breakpoints.count(pc)) {
-    auto& bp = m_breakpoints[pc];
+  std::cout << "step_over_breakpoint, pc = " << get_pc() << "\n";
+  if (m_breakpoints.count(get_pc())) {
+    auto& bp = m_breakpoints[get_pc()];
     if (bp.is_enabled()) {
       bp.disable();
       Ptrace::single_step(m_pid);
@@ -190,11 +204,14 @@ dwarf::die Debugger::get_function_from_pc(uint64_t pc) {
   throw std::out_of_range{"Cannot find function"};
 }
 
-dwarf::line_table::iterator Debugger::get_line_entry_from_pc(uint64_t pc) {
+dwarf::line_table::iterator Debugger::get_line_entry_from_pc(const uint64_t& pc) {
+  auto offset_pc = offset_load_address(pc); // remember to offset the pc for querying DWARF
+
+  std::cerr  << "get_line_entry_from_pc, pc = " << offset_pc << "\n";
   for (auto &compilationUnit : m_dwarf.compilation_units()) {
-    if (die_pc_range(compilationUnit.root()).contains(pc)) {
+    if (die_pc_range(compilationUnit.root()).contains(offset_pc)) {
       const auto &tableLine = compilationUnit.get_line_table();
-      auto it = tableLine.find_address(pc);
+      auto it = tableLine.find_address(offset_pc);
       if (it == tableLine.end()) {
         throw std::out_of_range { "Cannot find line entry" };
       } else {
@@ -223,8 +240,13 @@ void Debugger::initialize_load_address() {
 uint64_t Debugger::offset_load_address(uint64_t addr) {
   return addr - m_load_address;
 }
+
+uint64_t Debugger::offset_dwarf_address(uint64_t dwarf_addr) {
+  return dwarf_addr + m_load_address;
+}
+
 // todo: check the value of n_lines_context
-void Debugger::print_source(const std::string& file_name, uint32_t line, uint32_t n_lines_context = 2) {
+void Debugger::print_source(const std::string& file_name, uint32_t line, uint32_t n_lines_context) {
   std::ifstream file { file_name };
 
   // Work out a window around the desired line
@@ -271,8 +293,7 @@ void Debugger::handle_sigtrap(siginfo_t const& info) {
     {
       set_pc(get_pc() - 1); // put the pc back where it should be
       std::cout << "Hit breakpoint at address 0x" << std::hex << get_pc() << std::endl;
-      auto offset_pc = offset_load_address(get_pc()); // remember to offset the pc for querying DWARF
-      auto line_entry = get_line_entry_from_pc(offset_pc);
+      auto line_entry = get_line_entry_from_pc(get_pc());
       print_source(line_entry->file->path, line_entry->line);
       return;
     }
@@ -283,4 +304,109 @@ void Debugger::handle_sigtrap(siginfo_t const& info) {
       std::cout << "Unknown SIGTRAP code " << info.si_code << std::endl;
       return;
   }
+}
+
+void Debugger::single_step_instruction() {
+  Ptrace::single_step(m_pid);
+  wait_for_signal();
+}
+
+void Debugger::single_step_instruction_with_breakpoint_check() {
+  // first, check to see if we need to disable and enable a breakpoint
+  if (m_breakpoints.count(get_pc())) {
+    std::cout << "step_over_breakpoint\n";
+    step_over_breakpoint();
+  } else {
+    std::cout << "single_step_instruction\n";
+    single_step_instruction();
+  }
+}
+
+void Debugger::step_out() {
+  //  Return address is stored 8 bytes after the start of a stack frame.
+  uint64_t return_address = getReturnAddress();
+
+  bool should_remove_breakpoint = false;
+  if (!m_breakpoints.count(return_address)) {
+    set_breakpoint_at_address(return_address);
+    should_remove_breakpoint = true;
+  }
+
+  continue_execution();
+
+  if (should_remove_breakpoint) {
+    remove_breakpoint(return_address);
+  }
+}
+
+void Debugger::remove_breakpoint(uint64_t addr) {
+  BreakPoint& point = m_breakpoints.at(addr);
+  if (point.is_enabled()) {
+    point.disable();
+  }
+  m_breakpoints.erase(addr);
+}
+
+void Debugger::step_in() {
+  auto dwarf_table_line = get_line_entry_from_pc(get_offset_pc())->line;
+
+  while (get_line_entry_from_pc(get_offset_pc())->line == dwarf_table_line) {
+    single_step_instruction_with_breakpoint_check();
+  }
+
+  auto line_entry = get_line_entry_from_pc(get_offset_pc());
+  print_source(line_entry->file->path, line_entry->line);
+}
+
+uint64_t Debugger::get_offset_pc() {
+  return offset_load_address(get_pc());
+}
+
+// Real debuggers will often examine what instruction is being executed and
+// work out all of the possible branch targets, then set breakpoints on all of them.
+// We’ll need to come up with a simpler solution.
+//  1) Stepping until we’re at a new line in the current function
+//  2) To set a breakpoint at every line in the current function.
+// Solution:
+//  Consider the 1st one.
+//  If we’re stepping over a function call, we need to single step through every single instruction
+//  in that call graph.
+//  So use the 2nd approach
+void Debugger::step_over() {
+  dwarf::die const func_die = get_function_from_pc(get_offset_pc());
+  uint64_t func_entry = at_low_pc(func_die); // DW_AT::low_pc
+  uint64_t func_end = at_high_pc(func_die); // DW_AT::high_pc
+
+  auto curr_line = get_line_entry_from_pc(func_entry);
+  auto start_line = get_line_entry_from_pc(get_offset_pc());
+
+  std::vector<uint64_t> to_delete;
+
+  while(curr_line->address < func_end) {
+    const uint64_t current_address = curr_line->address;
+    const uint64_t load_address = offset_dwarf_address(current_address);
+    if (current_address != start_line->address && !m_breakpoints.count(load_address)) {
+      set_breakpoint_at_address(load_address);
+      to_delete.push_back(load_address);
+    }
+    ++curr_line;
+  }
+
+  // Set a breakpoint on the return address of the function, just like in step_out.
+  uint64_t return_address = getReturnAddress();
+  if (!m_breakpoints.count(return_address)) {
+    set_breakpoint_at_address(return_address);
+    to_delete.push_back(return_address);
+  }
+
+  continue_execution();
+
+  for (auto addr : to_delete) {
+    remove_breakpoint(addr);
+  }
+}
+
+uint64_t Debugger::getReturnAddress() const {
+  uint64_t frame_pointer = getRegisterValue(m_pid, Reg::rbp);
+  return Ptrace::read_memory(m_pid, frame_pointer + 8);
 }

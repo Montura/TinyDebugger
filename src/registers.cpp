@@ -23,7 +23,7 @@ const RegDescriptor* findRegDescInGlobalRegisterTable(LambdaPredicate const& pre
   return it;
 }
 
-uint64_t* findRegInUserRegisterTable(pid_t pid, const Reg& r,user_regs_struct& userRegs) {
+uint64_t* findRegInUserRegisterTable(pid_t pid, const Reg& r, user_regs_struct& userRegs) {
   Ptrace::get_registers(pid, &userRegs);
   const LambdaPredicate& predicate =
       [r](auto&& rd) {
@@ -63,7 +63,7 @@ std::string_view getRegisterName(Reg r) {
   return it->name;
 }
 
-Reg getRegisterFromName(const std::string_view& name) {
+Reg getRegisterByName(const std::string_view& name) {
   const LambdaPredicate& predicate = [name](auto&& rd) { return rd.name == name; };
   auto it = findRegDescInGlobalRegisterTable(predicate);
   return it->r;

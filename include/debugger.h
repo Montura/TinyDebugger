@@ -48,11 +48,29 @@ public:
   //    1. http://www.dwarfstd.org/doc/Debugging%20using%20DWARF-2012.pdf
   //    2. https://blog.tartanllama.xyz/writing-a-linux-debugger-elf-dwarf/
   dwarf::die get_function_from_pc(uint64_t pc);
-  dwarf::line_table::iterator get_line_entry_from_pc(uint64_t pc);
+  dwarf::line_table::iterator get_line_entry_from_pc(const uint64_t& pc);
 
   void initialize_load_address();
   uint64_t offset_load_address(uint64_t addr);
-  void print_source(const std::string& file_name, uint32_t line, uint32_t n_lines_context);
+  void print_source(const std::string& file_name, uint32_t line, uint32_t n_lines_context = 2);
   siginfo_t get_signal_info();
   void handle_sigtrap(siginfo_t const& info);
+
+  void single_step_instruction();
+
+  void single_step_instruction_with_breakpoint_check();
+
+  void step_out();
+
+  void remove_breakpoint(uint64_t addr);
+
+  uint64_t get_offset_pc();
+
+  void step_in();
+
+  uint64_t offset_dwarf_address(uint64_t dwarf_addr);
+
+  void step_over();
+
+  uint64_t getReturnAddress() const;
 };

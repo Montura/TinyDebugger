@@ -117,5 +117,5 @@ uint64_t getRegisterValueFromDwarfRegister(pid_t pid, int regDwarfValue);
 
 std::string_view getRegisterName(Reg r);
 
-Reg getRegisterFromName(const std::string_view& name);
+Reg getRegisterByName(const std::string_view& name);
 
