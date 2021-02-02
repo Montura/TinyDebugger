@@ -5,14 +5,14 @@
 #include <csignal>
 
 namespace Ptrace {
-  void trace_me();
-  void continue_exec(pid_t m_pid);
-  void single_step(pid_t m_pid);
-  void write_memory(uint64_t pid, uint64_t address, uint64_t data);
-  uint64_t read_memory(uint64_t pid, uint64_t address);
+  void traceMe();
+  void continueExec(pid_t m_pid);
+  void singleStep(pid_t m_pid);
+  void writeMemory(uint64_t pid, uint64_t address, uint64_t data);
+  uint64_t readMemory(uint64_t pid, uint64_t address);
 
-  void get_registers(uint64_t pid, user_regs_struct* user_regs);
-  void set_registers(uint64_t pid, user_regs_struct* user_regs);
+  void getRegisters(uint64_t pid, user_regs_struct* user_regs);
+  void setRegisters(uint64_t pid, user_regs_struct* user_regs);
 
-  void get_sig_info(uint64_t pid, siginfo_t* info);
+  void getSigInfo(uint64_t pid, siginfo_t* info);
 }

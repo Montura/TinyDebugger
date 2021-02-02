@@ -13,8 +13,8 @@ public:
   void enable();
   void disable();
 
-  auto is_enabled() const -> bool { return m_enabled; }
-  auto get_address() const -> uint64_t { return m_addr; }
+  auto isEnabled() const -> bool { return m_enabled; }
+  auto getAddress() const -> uint64_t { return m_addr; }
 
 private:
   pid_t m_pid;

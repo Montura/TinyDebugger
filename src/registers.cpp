@@ -24,7 +24,7 @@ const RegDescriptor* findRegDescInGlobalRegisterTable(LambdaPredicate const& pre
 }
 
 uint64_t* findRegInUserRegisterTable(pid_t pid, const Reg& r, user_regs_struct& userRegs) {
-  Ptrace::get_registers(pid, &userRegs);
+  Ptrace::getRegisters(pid, &userRegs);
   const LambdaPredicate& predicate =
       [r](auto&& rd) {
         return rd.r == r;
@@ -44,7 +44,7 @@ void setRegisterValue(pid_t pid, Reg const& r, uint64_t value) {
   uint64_t* pUserRegister = findRegInUserRegisterTable(pid, r, userRegs);
 
   *pUserRegister = value;
-  Ptrace::set_registers(pid, &userRegs);
+  Ptrace::setRegisters(pid, &userRegs);
 }
 
 uint64_t getRegisterValueFromDwarfRegister(pid_t pid, int regDwarfValue) {

@@ -19,35 +19,35 @@ uint64_t m_ptrace(__ptrace_request request, pid_t m_pid, uint64_t addr, uint64_t
   return res;
 }
 
-void Ptrace::trace_me() {
+void Ptrace::traceMe() {
   m_ptrace(PT_TRACE_ME, 0, 0, nullptr);
 }
 
-void Ptrace::continue_exec(pid_t m_pid) {
+void Ptrace::continueExec(pid_t m_pid) {
   m_ptrace(PT_CONTINUE, m_pid, 0, nullptr);
 }
 
-uint64_t Ptrace::read_memory(uint64_t pid, uint64_t address) {
+uint64_t Ptrace::readMemory(uint64_t pid, uint64_t address) {
   return m_ptrace(PTRACE_PEEKDATA, pid, address, nullptr);
 }
 
-void Ptrace::write_memory(uint64_t pid, uint64_t address, uint64_t data) {
+void Ptrace::writeMemory(uint64_t pid, uint64_t address, uint64_t data) {
   m_ptrace(PTRACE_POKEDATA, pid, address, reinterpret_cast<uint64_t*>(data));
 }
 
-void Ptrace::single_step(pid_t m_pid) {
+void Ptrace::singleStep(pid_t m_pid) {
   m_ptrace(PTRACE_SINGLESTEP, m_pid, 0, nullptr);
 }
 
-void Ptrace::get_registers(uint64_t pid, user_regs_struct* user_regs) {
+void Ptrace::getRegisters(uint64_t pid, user_regs_struct* user_regs) {
   m_ptrace(PTRACE_GETREGS, pid, 0, reinterpret_cast<uint64_t*>(user_regs));
 }
 
-void Ptrace::set_registers(uint64_t pid, user_regs_struct* user_regs) {
+void Ptrace::setRegisters(uint64_t pid, user_regs_struct* user_regs) {
   m_ptrace(PTRACE_SETREGS, pid, 0, reinterpret_cast<uint64_t*>(user_regs));
 }
 
-void Ptrace::get_sig_info(uint64_t pid, siginfo_t* info) {
+void Ptrace::getSigInfo(uint64_t pid, siginfo_t* info) {
   ptrace(PTRACE_GETSIGINFO, pid, nullptr, reinterpret_cast<uint64_t*>(info));
 }
 

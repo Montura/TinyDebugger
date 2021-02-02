@@ -26,19 +26,19 @@ public:
 
   void dispose();
 
-  void wait_for_signal();
+  void waitForSignal();
   void run();
-  void handle_command(const char* command);
-  void continue_execution();
-  void step_over_breakpoint();
+  void handleCommand(const char* command);
+  void continueExecution();
+  void stepOverBreakpoint();
 
-  void set_breakpoint_at_address(uint64_t addr);
-  void dump_registers();
+  void setBreakpointAtAddress(uint64_t addr);
+  void dumpRegisters();
 
-  uint64_t get_pc();
-  void set_pc(uint64_t pc);
+  uint64_t getPc();
+  void setPc(uint64_t pc);
 
-  static uint64_t convert_arg_to_hex_address(const std::string& arg);
+  static uint64_t convertArgToHexAddress(const std::string& arg);
 
   // DWARF ->  standardized debugging data format
   // ELF -> Executable and Linkage Format:
@@ -47,22 +47,22 @@ public:
   // DIE -> DWARF Information Entry:
   //    1. http://www.dwarfstd.org/doc/Debugging%20using%20DWARF-2012.pdf
   //    2. https://blog.tartanllama.xyz/writing-a-linux-debugger-elf-dwarf/
-  dwarf::die get_function_from_pc(uint64_t pc);
-  dwarf::line_table::iterator get_line_entry_from_pc(const uint64_t& pc, bool need_offset = true);
+  dwarf::die getFunctionFromPc(uint64_t pc);
+  dwarf::line_table::iterator getLineEntryFromPc(const uint64_t& pc, bool need_offset = true);
 
-  void initialize_load_address();
-  uint64_t offset_load_address(uint64_t addr);
-  void print_source(const std::string& file_name, uint32_t line, uint32_t n_lines_context = 2);
-  siginfo_t get_signal_info();
-  void handle_sigtrap(siginfo_t const& info);
+  void initializeLoadAddress();
+  uint64_t offsetLoadAddress(uint64_t addr);
+  void printSource(const std::string& file_name, uint32_t line, uint32_t n_lines_context = 2);
+  siginfo_t getSignalInfo();
+  void handleSigtrap(siginfo_t const& info);
 
-  void single_step_instruction();
-  void single_step_instruction_with_breakpoint_check();
-  void step_over();
-  void step_out();
-  void step_in();
+  void singleStepInstruction();
+  void singleStepInstructionWithBreakpointCheck();
+  void stepOver();
+  void stepOut();
+  void stepIn();
 
-  void remove_breakpoint(uint64_t addr);
-  uint64_t offset_dwarf_address(uint64_t dwarf_addr);
+  void removeBreakpoint(uint64_t addr);
+  uint64_t offsetDwarfAddress(uint64_t dwarf_addr);
   uint64_t getReturnAddress() const;
 };

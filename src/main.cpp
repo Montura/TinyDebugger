@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
 #endif
     // ptrace allows us to observe and control the execution of another process by reading registers,
     // reading memory, single stepping and more.
-    Ptrace::trace_me();
+    Ptrace::traceMe();
     execl(programm, programm, nullptr);
   } else if (pid >= 1)  {
     // we're in the parent process execute debugger
