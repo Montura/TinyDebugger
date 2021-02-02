@@ -70,7 +70,7 @@ void Debugger::run() {
 
 void Debugger::handleCommand(const char* line) {
   std::vector<std::string> args;
-  split(command, ' ', std::back_inserter(args));
+  split(line, ' ', std::back_inserter(args));
 //  std::cout << "Size of args:" << args.size() << "\n";
   auto command = args.empty() ? "" : args[0];
 
