@@ -157,9 +157,10 @@ void Debugger::set_pc(uint64_t pc) {
 }
 
 void Debugger::step_over_breakpoint() {
-  std::cout << "step_over_breakpoint, pc = " << get_pc() << "\n";
-  if (m_breakpoints.count(get_pc())) {
-    auto& bp = m_breakpoints[get_pc()];
+  const uint64_t pc = get_pc();
+  std::cout << "step_over_breakpoint, pc = " << pc << "\n";
+  if (m_breakpoints.count(pc)) {
+    auto& bp = m_breakpoints[pc];
     if (bp.is_enabled()) {
       bp.disable();
       Ptrace::single_step(m_pid);
@@ -189,12 +190,15 @@ void Debugger::wait_for_signal() {
 }
 
 dwarf::die Debugger::get_function_from_pc(uint64_t pc) {
+  auto offset_pc = offset_load_address(pc); // remember to offset the pc for querying DWARF
+
+  std::cerr  << "get_function_from_pc, pc = " << offset_pc << "\n";
   // We find the correct compilation unit, then ask the line table to get us the relevant entry.
   for (const auto &compilationUnit : m_dwarf.compilation_units()) {
-    if (die_pc_range(compilationUnit.root()).contains(pc)) {
+    if (die_pc_range(compilationUnit.root()).contains(offset_pc)) {
       for (const auto& die : compilationUnit.root()) {
         if (die.tag == dwarf::DW_TAG::subprogram) {
-          if (die_pc_range(die).contains(pc)) {
+          if (die_pc_range(die).contains(offset_pc)) {
             return die;
           }
         }
@@ -204,8 +208,8 @@ dwarf::die Debugger::get_function_from_pc(uint64_t pc) {
   throw std::out_of_range{"Cannot find function"};
 }
 
-dwarf::line_table::iterator Debugger::get_line_entry_from_pc(const uint64_t& pc) {
-  auto offset_pc = offset_load_address(pc); // remember to offset the pc for querying DWARF
+dwarf::line_table::iterator Debugger::get_line_entry_from_pc(const uint64_t& pc, bool need_offset) {
+  auto offset_pc = need_offset ? offset_load_address(pc) : pc; // remember to offset the pc for querying DWARF
 
   std::cerr  << "get_line_entry_from_pc, pc = " << offset_pc << "\n";
   for (auto &compilationUnit : m_dwarf.compilation_units()) {
@@ -292,7 +296,7 @@ void Debugger::handle_sigtrap(siginfo_t const& info) {
     case TRAP_BRKPT:
     {
       set_pc(get_pc() - 1); // put the pc back where it should be
-      std::cout << "Hit breakpoint at address 0x" << std::hex << get_pc() << std::endl;
+      std::cout << "Hit breakpoint at address " << std::hex << get_pc() << std::endl;
       auto line_entry = get_line_entry_from_pc(get_pc());
       print_source(line_entry->file->path, line_entry->line);
       return;
@@ -348,18 +352,15 @@ void Debugger::remove_breakpoint(uint64_t addr) {
 }
 
 void Debugger::step_in() {
-  auto dwarf_table_line = get_line_entry_from_pc(get_offset_pc())->line;
+  const uint64_t pc = get_pc();
+  auto dwarf_table_line = get_line_entry_from_pc(pc)->line;
 
-  while (get_line_entry_from_pc(get_offset_pc())->line == dwarf_table_line) {
+  while (get_line_entry_from_pc(pc)->line == dwarf_table_line) {
     single_step_instruction_with_breakpoint_check();
   }
 
-  auto line_entry = get_line_entry_from_pc(get_offset_pc());
+  auto line_entry = get_line_entry_from_pc(pc);
   print_source(line_entry->file->path, line_entry->line);
-}
-
-uint64_t Debugger::get_offset_pc() {
-  return offset_load_address(get_pc());
 }
 
 // Real debuggers will often examine what instruction is being executed and
@@ -373,12 +374,13 @@ uint64_t Debugger::get_offset_pc() {
 //  in that call graph.
 //  So use the 2nd approach
 void Debugger::step_over() {
-  dwarf::die const func_die = get_function_from_pc(get_offset_pc());
+  const uint64_t pc = get_pc();
+  dwarf::die const func_die = get_function_from_pc(pc);
   uint64_t func_entry = at_low_pc(func_die); // DW_AT::low_pc
   uint64_t func_end = at_high_pc(func_die); // DW_AT::high_pc
 
-  auto curr_line = get_line_entry_from_pc(func_entry);
-  auto start_line = get_line_entry_from_pc(get_offset_pc());
+  auto curr_line = get_line_entry_from_pc(func_entry, false);
+  auto start_line = get_line_entry_from_pc(pc);
 
   std::vector<uint64_t> to_delete;
 
