@@ -11,6 +11,7 @@
 #include "debugger.h"
 #include "ptrace_impl.h"
 #include "registers.h"
+#include "symbol.h"
 
 template <class Output>
 void split(const std::string &s, char delimiter, Output result) {
@@ -26,6 +27,14 @@ bool is_prefix(const std::string& s, const std::string& of) {
     return false;
   }
   return !s.empty() && std::equal(s.begin(), s.end(), of.begin());
+}
+
+bool is_suffix(const std::string& s, const std::string& of) {
+  if (s.size() > of.size()) {
+    return false;
+  }
+  size_t diff = of.size() - s.size();
+  return std::equal(s.begin(), s.end(), of.begin() + diff);
 }
 
 Debugger::Debugger(std::string prog_name, pid_t pid) :
@@ -77,7 +86,15 @@ void Debugger::handleCommand(const char* line) {
   if (is_prefix(command, "continue")) {
     continueExecution();
   } else if(is_prefix(command, "break")) {
-    setBreakpointAtAddress(convertArgToHexAddress(args[1]));
+    if (args[1][0] == '0' && args[1][1] == 'x') {
+      setBreakpointAtAddress(convertArgToHexAddress(args[1]));
+    } else if (args[1].find(':') != std::string::npos) {
+      std::vector<std::string> file_and_line;
+      split(args[1], ':', std::back_inserter(file_and_line));
+      setBreakpointAtSourceLine(file_and_line[0], std::stoi(file_and_line[1]));
+    } else {
+      setBreakpointAtFunction(args[1]);
+    }
   } else if (is_prefix(command, "register")) {
     if (is_prefix(args[1], "dump")) {
       dumpRegisters();
@@ -109,6 +126,11 @@ void Debugger::handleCommand(const char* line) {
     stepOver();
   } else if(is_prefix(command, "finish")) {
     stepOut();
+  } else if(is_prefix(command, "symbol")) {
+    auto symbol_vector = lookupSymbol(args[1]);
+    for (const Symbol& symbol : symbol_vector) {
+      std::cout << symbol;
+    }
   } else {
     std::cerr << "Unknown command\n";
   }
@@ -121,6 +143,9 @@ void Debugger::continueExecution() {
   Ptrace::continueExec(m_pid);
   waitForSignal();
 }
+
+// Debugger Part 2: Breakpoints
+// https://blog.tartanllama.xyz/writing-a-linux-debugger-breakpoints/
 
 void Debugger::setBreakpointAtAddress(uint64_t addr) {
   std::cout << "Set BreakPoint at address " << std::hex << addr << std::endl;
@@ -136,6 +161,9 @@ void Debugger::dispose()  {
   }
   m_breakpoints.clear();
 }
+
+// Debugger Part 3: Registers and memory
+// https://blog.tartanllama.xyz/writing-a-linux-debugger-registers/
 
 void Debugger::dumpRegisters() {
   for (const auto& rd : globalRegisterDescriptors) {
@@ -188,6 +216,9 @@ void Debugger::waitForSignal() {
       std::cout << "Got signal " << strsignal(siginfo.si_signo) << std::endl;
   }
 }
+
+// Debugger Part 5: Source and signals
+// https://blog.tartanllama.xyz/writing-a-linux-debugger-source-signal/
 
 dwarf::die Debugger::getFunctionFromPc(uint64_t pc) {
   auto offset_pc = offsetLoadAddress(pc); // remember to offset the pc for querying DWARF
@@ -310,6 +341,9 @@ void Debugger::handleSigtrap(siginfo_t const& info) {
   }
 }
 
+// Debugger Part 6: Source-level stepping
+// https://blog.tartanllama.xyz/writing-a-linux-debugger-dwarf-step/
+
 void Debugger::singleStepInstruction() {
   Ptrace::singleStep(m_pid);
   waitForSignal();
@@ -327,7 +361,6 @@ void Debugger::singleStepInstructionWithBreakpointCheck() {
 }
 
 void Debugger::stepOut() {
-  //  Return address is stored 8 bytes after the start of a stack frame.
   uint64_t return_address = getReturnAddress();
 
   bool should_remove_breakpoint = false;
@@ -394,7 +427,6 @@ void Debugger::stepOver() {
     ++curr_line;
   }
 
-  // Set a breakpoint on the return address of the function, just like in stepOut.
   uint64_t return_address = getReturnAddress();
   if (!m_breakpoints.count(return_address)) {
     setBreakpointAtAddress(return_address);
@@ -409,6 +441,73 @@ void Debugger::stepOver() {
 }
 
 uint64_t Debugger::getReturnAddress() const {
+  // Return address is stored 8 bytes after the start of a stack frame.
   uint64_t frame_pointer = getRegisterValue(m_pid, Reg::rbp);
   return Ptrace::readMemory(m_pid, frame_pointer + 8);
+}
+
+
+// Debugger Part 7: Source-level breakpoints
+// https://blog.tartanllama.xyz/writing-a-linux-debugger-source-break/
+//    DWARF contains the address ranges of functions and a line table which lets you
+// translate code positions between abstraction levels.
+
+//  Function entry (onyly for global scope)
+//  Idea:
+//    Iterate through all of the CU and search for functions with names which match what we’re looking for.
+void Debugger::setBreakpointAtFunction(const std::string& name) {
+  for (const auto& compilation_unit : m_dwarf.compilation_units()) {
+    for (const auto& die : compilation_unit.root()) {
+      if (die.has(dwarf::DW_AT::name) && at_name(die) == name) {
+        auto low_pc = at_low_pc(die);
+        // DW_AT_low_pc for a function points to the start of the prologue.
+        auto entry = getLineEntryFromPc(low_pc, false);
+        // Hack: increment the line entry by one to get the first line of the user code instead of the prologue.
+        ++entry;
+        setBreakpointAtAddress(offsetDwarfAddress(entry->address));
+      }
+    }
+  }
+}
+
+// Source line
+//  Idea: Translate this line number into an address by looking it up in the DWARF.
+//  1. Iterate through the CU looking for one whose name matches the given file.
+//  2. Look for the entry which corresponds to the given line.
+void Debugger::setBreakpointAtSourceLine(const std::string& file_name, uint32_t line_number) {
+  for (const auto& compilation_unit : m_dwarf.compilation_units()) {
+    if (is_suffix(file_name, at_name(compilation_unit.root()))) {
+      const auto& line_table = compilation_unit.get_line_table();
+
+      for (const auto& entry : line_table) {
+        // entry.is_stmt is checking that the line table entry is marked as the beginning of a statement,
+        // which is set by the compiler on the address it thinks is the best target for a breakpoint.
+        if (entry.is_stmt && entry.line == line_number) {
+          setBreakpointAtAddress(offsetDwarfAddress(entry.address));
+          return;
+        }
+      }
+    }
+  }
+}
+
+// Symbol lookup
+// Idea: take a look at the .symtab section of a binary, produced with readelf
+std::vector<Symbol> Debugger::lookupSymbol(const std::string& name) {
+  std::vector<Symbol> symbols;
+  for (const auto &section : m_elf.sections()) {
+    const elf::sht section_type = section.get_hdr().type;
+    if (section_type != elf::sht::symtab && section_type != elf::sht::dynsym) {
+      continue;
+    }
+
+    for (const elf::sym symbol : section.as_symtab()) {
+      const std::string& symbol_name = symbol.get_name();
+      if (symbol_name == name) {
+        symbols.emplace_back(symbol.get_data(), symbol_name);
+      }
+    }
+  }
+
+  return symbols;
 }

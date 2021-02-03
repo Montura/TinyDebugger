@@ -8,6 +8,7 @@
 #include "breakpoint.h"
 #include "internal.hh"
 #include "elf++.hh"
+#include "symbol.h"
 
 class Debugger {
   std::string m_prog_name;
@@ -65,4 +66,10 @@ public:
   void removeBreakpoint(uint64_t addr);
   uint64_t offsetDwarfAddress(uint64_t dwarf_addr);
   uint64_t getReturnAddress() const;
+
+  void setBreakpointAtFunction(const std::string& name);
+
+  void setBreakpointAtSourceLine(const std::string& file_name, uint32_t line_number);
+
+  std::vector<Symbol> lookupSymbol(const std::string& name);
 };
