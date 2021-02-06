@@ -13,6 +13,7 @@ set(SOURCE_FILES
     elf.cc
     expr.cc
     line.cc
+    loclist.cc
     rangelist.cc
     to_string.cc
     value.cc)
