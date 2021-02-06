@@ -78,4 +78,6 @@ public:
   void printBacktrace();
 
   uint64_t unwindFramePointer(uint64_t& frame_pointer) const;
+
+  void readVariables();
 };

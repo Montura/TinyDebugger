@@ -13,7 +13,8 @@ set(SOURCE_FILES
     src/ptrace_impl.cpp
     src/breakpoint.cpp
     src/registers.cpp
-    src/symbol.cpp include/symbol.h)
+    src/symbol.cpp
+    src/expression_context.cpp)
 
 add_executable(debugger ${SOURCE_FILES})
 target_link_libraries(debugger PRIVATE linenoise libdwarf libelf)

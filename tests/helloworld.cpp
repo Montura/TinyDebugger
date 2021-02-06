@@ -13,6 +13,3 @@ int main() {
   std::cerr << "HelloWorld!\n";
   return 0;
 }
-
-// See ./dwarfdump for Part 7: Source-level breakpoints
-// dwarfdump ./helloworld > dwarfdump

@@ -1,0 +1,216 @@
+
+.debug_info
+
+COMPILE_UNIT<header overall offset = 0x00000000>:
+< 0><0x0000000b>  DW_TAG_compile_unit
+                    DW_AT_producer              GNU C++14 9.3.0 -mtune=generic -march=x86-64 -g -fasynchronous-unwind-tables -fstack-protector-strong
+                    DW_AT_language              DW_LANG_C_plus_plus
+                    DW_AT_name                  test.cpp
+                    DW_AT_comp_dir              /home/montua/cppProjects/tinyDebugger
+                    DW_AT_low_pc                0x000005d5
+                    DW_AT_high_pc               <offset-from-lowpc>145
+                    DW_AT_stmt_list             0x00000000
+
+LOCAL_SYMBOLS:
+< 1><0x0000002d>    DW_TAG_subprogram
+                      DW_AT_external              yes(1)
+                      DW_AT_name                  main
+                      DW_AT_decl_file             0x00000001 /home/montua/cppProjects/tinyDebugger/test.cpp
+                      DW_AT_decl_line             0x00000020
+                      DW_AT_decl_column           0x00000005
+                      DW_AT_type                  <0x0000004b>
+                      DW_AT_low_pc                0x00000656
+                      DW_AT_high_pc               <offset-from-lowpc>16
+                      DW_AT_frame_base            len 0x0001: 9c: DW_OP_call_frame_cfa
+                      DW_AT_GNU_all_tail_call_sites yes(1)
+< 1><0x0000004b>    DW_TAG_base_type
+                      DW_AT_byte_size             0x00000004
+                      DW_AT_encoding              DW_ATE_signed
+                      DW_AT_name                  int
+< 1><0x00000052>    DW_TAG_subprogram
+                      DW_AT_external              yes(1)
+                      DW_AT_name                  f
+                      DW_AT_decl_file             0x00000001 /home/montua/cppProjects/tinyDebugger/test.cpp
+                      DW_AT_decl_line             0x00000019
+                      DW_AT_decl_column           0x00000006
+                      DW_AT_linkage_name          _Z1fv
+                      DW_AT_low_pc                0x0000063f
+                      DW_AT_high_pc               <offset-from-lowpc>23
+                      DW_AT_frame_base            len 0x0001: 9c: DW_OP_call_frame_cfa
+                      DW_AT_GNU_all_tail_call_sites yes(1)
+                      DW_AT_sibling               <0x00000082>
+< 2><0x00000072>      DW_TAG_variable
+                        DW_AT_name                  foo
+                        DW_AT_decl_file             0x00000001 /home/montua/cppProjects/tinyDebugger/test.cpp
+                        DW_AT_decl_line             0x0000001a
+                        DW_AT_decl_column           0x00000007
+                        DW_AT_type                  <0x0000004b>
+                        DW_AT_location              len 0x0002: 916c: DW_OP_fbreg -20
+< 1><0x00000082>    DW_TAG_subprogram
+                      DW_AT_external              yes(1)
+                      DW_AT_name                  e
+                      DW_AT_decl_file             0x00000001 /home/montua/cppProjects/tinyDebugger/test.cpp
+                      DW_AT_decl_line             0x00000014
+                      DW_AT_decl_column           0x00000006
+                      DW_AT_linkage_name          _Z1ev
+                      DW_AT_low_pc                0x00000628
+                      DW_AT_high_pc               <offset-from-lowpc>23
+                      DW_AT_frame_base            len 0x0001: 9c: DW_OP_call_frame_cfa
+                      DW_AT_GNU_all_tail_call_sites yes(1)
+                      DW_AT_sibling               <0x000000b2>
+< 2><0x000000a2>      DW_TAG_variable
+                        DW_AT_name                  foo
+                        DW_AT_decl_file             0x00000001 /home/montua/cppProjects/tinyDebugger/test.cpp
+                        DW_AT_decl_line             0x00000015
+                        DW_AT_decl_column           0x00000007
+                        DW_AT_type                  <0x0000004b>
+                        DW_AT_location              len 0x0002: 916c: DW_OP_fbreg -20
+< 1><0x000000b2>    DW_TAG_subprogram
+                      DW_AT_external              yes(1)
+                      DW_AT_name                  d
+                      DW_AT_decl_file             0x00000001 /home/montua/cppProjects/tinyDebugger/test.cpp
+                      DW_AT_decl_line             0x0000000f
+                      DW_AT_decl_column           0x00000006
+                      DW_AT_linkage_name          _Z1dv
+                      DW_AT_low_pc                0x00000611
+                      DW_AT_high_pc               <offset-from-lowpc>23
+                      DW_AT_frame_base            len 0x0001: 9c: DW_OP_call_frame_cfa
+                      DW_AT_GNU_all_tail_call_sites yes(1)
+                      DW_AT_sibling               <0x000000e2>
+< 2><0x000000d2>      DW_TAG_variable
+                        DW_AT_name                  foo
+                        DW_AT_decl_file             0x00000001 /home/montua/cppProjects/tinyDebugger/test.cpp
+                        DW_AT_decl_line             0x00000010
+                        DW_AT_decl_column           0x00000007
+                        DW_AT_type                  <0x0000004b>
+                        DW_AT_location              len 0x0002: 916c: DW_OP_fbreg -20
+< 1><0x000000e2>    DW_TAG_subprogram
+                      DW_AT_external              yes(1)
+                      DW_AT_name                  c
+                      DW_AT_decl_file             0x00000001 /home/montua/cppProjects/tinyDebugger/test.cpp
+                      DW_AT_decl_line             0x0000000a
+                      DW_AT_decl_column           0x00000006
+                      DW_AT_linkage_name          _Z1cv
+                      DW_AT_low_pc                0x000005fa
+                      DW_AT_high_pc               <offset-from-lowpc>23
+                      DW_AT_frame_base            len 0x0001: 9c: DW_OP_call_frame_cfa
+                      DW_AT_GNU_all_tail_call_sites yes(1)
+                      DW_AT_sibling               <0x00000112>
+< 2><0x00000102>      DW_TAG_variable
+                        DW_AT_name                  foo
+                        DW_AT_decl_file             0x00000001 /home/montua/cppProjects/tinyDebugger/test.cpp
+                        DW_AT_decl_line             0x0000000b
+                        DW_AT_decl_column           0x00000007
+                        DW_AT_type                  <0x0000004b>
+                        DW_AT_location              len 0x0002: 916c: DW_OP_fbreg -20
+< 1><0x00000112>    DW_TAG_subprogram
+                      DW_AT_external              yes(1)
+                      DW_AT_name                  b
+                      DW_AT_decl_file             0x00000001 /home/montua/cppProjects/tinyDebugger/test.cpp
+                      DW_AT_decl_line             0x00000005
+                      DW_AT_decl_column           0x00000006
+                      DW_AT_linkage_name          _Z1bv
+                      DW_AT_low_pc                0x000005e3
+                      DW_AT_high_pc               <offset-from-lowpc>23
+                      DW_AT_frame_base            len 0x0001: 9c: DW_OP_call_frame_cfa
+                      DW_AT_GNU_all_tail_call_sites yes(1)
+                      DW_AT_sibling               <0x00000142>
+< 2><0x00000132>      DW_TAG_variable
+                        DW_AT_name                  foo
+                        DW_AT_decl_file             0x00000001 /home/montua/cppProjects/tinyDebugger/test.cpp
+                        DW_AT_decl_line             0x00000006
+                        DW_AT_decl_column           0x00000007
+                        DW_AT_type                  <0x0000004b>
+                        DW_AT_location              len 0x0002: 916c: DW_OP_fbreg -20
+< 1><0x00000142>    DW_TAG_subprogram
+                      DW_AT_external              yes(1)
+                      DW_AT_name                  a
+                      DW_AT_decl_file             0x00000001 /home/montua/cppProjects/tinyDebugger/test.cpp
+                      DW_AT_decl_line             0x00000001
+                      DW_AT_decl_column           0x00000006
+                      DW_AT_linkage_name          _Z1av
+                      DW_AT_low_pc                0x000005d5
+                      DW_AT_high_pc               <offset-from-lowpc>14
+                      DW_AT_frame_base            len 0x0001: 9c: DW_OP_call_frame_cfa
+                      DW_AT_GNU_all_call_sites    yes(1)
+< 2><0x0000015e>      DW_TAG_variable
+                        DW_AT_name                  foo
+                        DW_AT_decl_file             0x00000001 /home/montua/cppProjects/tinyDebugger/test.cpp
+                        DW_AT_decl_line             0x00000002
+                        DW_AT_decl_column           0x00000007
+                        DW_AT_type                  <0x0000004b>
+                        DW_AT_location              len 0x0002: 916c: DW_OP_fbreg -20
+
+.debug_line: line number info for a single cu
+Source lines (from CU-DIE at .debug_info offset 0x0000000b):
+
+            NS new statement, BB new basic block, ET end of text sequence
+            PE prologue end, EB epilogue begin
+            IS=val ISA number, DI=val discriminator value
+<pc>        [lno,col] NS BB ET PE EB IS= DI= uri: "filepath"
+0x000005d5  [   1,10] NS uri: "/home/montua/cppProjects/tinyDebugger/test.cpp"
+0x000005d9  [   2, 7] NS
+0x000005e0  [   3, 1] NS
+0x000005e3  [   5,10] NS
+0x000005eb  [   6, 7] NS
+0x000005f2  [   7, 4] NS
+0x000005f7  [   8, 1] NS
+0x000005fa  [  10,10] NS
+0x00000602  [  11, 7] NS
+0x00000609  [  12, 4] NS
+0x0000060e  [  13, 1] NS
+0x00000611  [  15,10] NS
+0x00000619  [  16, 7] NS
+0x00000620  [  17, 4] NS
+0x00000625  [  18, 1] NS
+0x00000628  [  20,10] NS
+0x00000630  [  21, 7] NS
+0x00000637  [  22, 4] NS
+0x0000063c  [  23, 1] NS
+0x0000063f  [  25,10] NS
+0x00000647  [  26, 7] NS
+0x0000064e  [  27, 4] NS
+0x00000653  [  28, 1] NS
+0x00000656  [  32,12] NS
+0x0000065a  [  33, 4] NS
+0x0000065f  [  34, 1] NS
+0x00000666  [  34, 1] NS ET
+
+.debug_pubnames
+
+.debug_str
+name at offset 0x00000000, length    5 is '_Z1ev'
+name at offset 0x00000006, length    5 is '_Z1fv'
+name at offset 0x0000000c, length    5 is '_Z1dv'
+name at offset 0x00000012, length   37 is '/home/montua/cppProjects/tinyDebugger'
+name at offset 0x00000038, length    5 is '_Z1av'
+name at offset 0x0000003e, length    5 is '_Z1bv'
+name at offset 0x00000044, length    4 is 'main'
+name at offset 0x00000049, length    8 is 'test.cpp'
+name at offset 0x00000052, length    5 is '_Z1cv'
+name at offset 0x00000058, length  101 is 'GNU C++14 9.3.0 -mtune=generic -march=x86-64 -g -fasynchronous-unwind-tables -fstack-protector-strong'
+
+.debug_aranges
+
+COMPILE_UNIT<header overall offset = 0x00000000>:
+< 0><0x0000000b>  DW_TAG_compile_unit
+                    DW_AT_producer              GNU C++14 9.3.0 -mtune=generic -march=x86-64 -g -fasynchronous-unwind-tables -fstack-protector-strong
+                    DW_AT_language              DW_LANG_C_plus_plus
+                    DW_AT_name                  test.cpp
+                    DW_AT_comp_dir              /home/montua/cppProjects/tinyDebugger
+                    DW_AT_low_pc                0x000005d5
+                    DW_AT_high_pc               <offset-from-lowpc>145
+                    DW_AT_stmt_list             0x00000000
+
+
+arange starts at 0x000005d5, length of 0x00000091, cu_die_offset = 0x0000000b
+arange end
+
+.debug_frame
+
+.debug_static_func
+
+.debug_static_vars
+
+.debug_weaknames
+

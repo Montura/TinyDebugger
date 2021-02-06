@@ -7,8 +7,9 @@
   #include <wait.h>
 #endif
 
-#include "linenoise.h"
+#include "expression_context.h"
 #include "debugger.h"
+#include "linenoise.h"
 #include "ptrace_impl.h"
 #include "registers.h"
 #include "symbol.h"
@@ -133,6 +134,8 @@ void Debugger::handleCommand(const char* line) {
     }
   } else if(is_prefix(command, "backtrace")) {
     printBacktrace();
+  } else if(is_prefix(command, "vars")) {
+    readVariables();
   } else {
     std::cerr << "Unknown command\n";
   }
@@ -575,5 +578,68 @@ void Debugger::printBacktrace() {
     current_func = getFunctionFromPc(return_address);
     output_frame(current_func);
     return_address = unwindFramePointer(frame_pointer);
+  }
+}
+
+// Debugger Part 9: Handling variables
+// Variables are sneaky:
+// - 1. Can be happily sitting in registers
+// - 2. Can be spilled to the stack.
+// - 3. The compiler completely throws them out of the window for the sake of optimization.
+
+// The location of a variable in memory at a given moment is encoded in the DWARF (DW_AT_location).
+// Location descriptions can be:
+//   - Single location descriptions (see struct__dwarfdump:88):
+//       DW_OP_fbreg -208
+//       A variable which is entirely stored -208 bytes from the stack frame base
+//   - Composite location descriptions (describe an object in terms of pieces, each of which may
+//   be contained in part of a register or stored in a memory location unrelated to other pieces):
+//       DW_OP_reg3 DW_OP_piece 4 DW_OP_reg10 DW_OP_piece 2
+//       A variable:
+//        - whose first four bytes reside in register 3 and
+//        - whose next two bytes reside in register 10
+//  - Location lists (describe objects which have a limited lifetime or change location during their lifetime)
+//       <loclist with 3 entries follows>
+//          [ 0]<lowpc=0x2e00><highpc=0x2e19>DW_OP_reg0
+//          [ 1]<lowpc=0x2e19><highpc=0x2e3f>DW_OP_reg3
+//          [ 2]<lowpc=0x2ec4><highpc=0x2ec7>DW_OP_reg2
+//    A variable whose location moves between registers depending on the current value of the program counter
+
+
+void Debugger::readVariables() {
+  // find the function which we’re currently in
+  auto func = getFunctionFromPc(getPc());
+
+  // loop through the entries in that function, looking for variables
+  for (const auto& die : func) {
+    if (die.tag == dwarf::DW_TAG::variable) {
+      auto loc_val = die[dwarf::DW_AT::location];
+
+      if (loc_val.get_type() == dwarf::value::type::exprloc) {
+        ExpressionContext context{m_pid, m_load_address};
+        auto result = loc_val.as_exprloc().evaluate(&context);
+
+        const uint64_t offset_address = result.value;
+//        std::cout << "offset_address" << (void *)offset_address << "\n";
+        switch (result.location_type) {
+          case dwarf::expr_result::type::address:
+          {
+            auto value = Ptrace::readMemory(m_pid, offset_address);
+            std::cout << at_name(die) << " (0x" << std::hex << offset_address << ") = " << value << std::endl;
+            break;
+          }
+          case dwarf::expr_result::type::reg:
+          {
+            auto value = getRegisterValueFromDwarfRegister(m_pid, offset_address);
+            std::cout << at_name(die) << " (reg " << offset_address << ") = " << value << std::endl;
+            break;
+          }
+          default:
+            throw std::runtime_error{"Unhandled variable location"};
+        }
+      } else {
+        throw std::runtime_error{"Unhandled variable location"};
+      }
+    }
   }
 }
