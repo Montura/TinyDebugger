@@ -72,4 +72,10 @@ public:
   void setBreakpointAtSourceLine(const std::string& file_name, uint32_t line_number);
 
   std::vector<Symbol> lookupSymbol(const std::string& name);
+
+//  void logBacktraceLine(const dwarf::die& func_dwarf_addr);
+
+  void printBacktrace();
+
+  uint64_t unwindFramePointer(uint64_t& frame_pointer) const;
 };

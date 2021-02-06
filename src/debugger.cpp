@@ -131,6 +131,8 @@ void Debugger::handleCommand(const char* line) {
     for (const Symbol& symbol : symbol_vector) {
       std::cout << symbol;
     }
+  } else if(is_prefix(command, "backtrace")) {
+    printBacktrace();
   } else {
     std::cerr << "Unknown command\n";
   }
@@ -242,7 +244,7 @@ dwarf::die Debugger::getFunctionFromPc(uint64_t pc) {
 dwarf::line_table::iterator Debugger::getLineEntryFromPc(const uint64_t& pc, bool need_offset) {
   auto offset_pc = need_offset ? offsetLoadAddress(pc) : pc; // remember to offset the pc for querying DWARF
 
-  std::cerr  << "getLineEntryFromPc, pc = " << offset_pc << "\n";
+//  std::cerr  << "getLineEntryFromPc, pc = " << offset_pc << "\n";
   for (auto &compilationUnit : m_dwarf.compilation_units()) {
     if (die_pc_range(compilationUnit.root()).contains(offset_pc)) {
       const auto &tableLine = compilationUnit.get_line_table();
@@ -446,6 +448,11 @@ uint64_t Debugger::getReturnAddress() const {
   return Ptrace::readMemory(m_pid, frame_pointer + 8);
 }
 
+uint64_t Debugger::unwindFramePointer(uint64_t& frame_pointer) const {
+  // Return address is stored 8 bytes after the start of a stack frame.
+  frame_pointer = Ptrace::readMemory(m_pid, frame_pointer);
+  return Ptrace::readMemory(m_pid, frame_pointer + 8);
+}
 
 // Debugger Part 7: Source-level breakpoints
 // https://blog.tartanllama.xyz/writing-a-linux-debugger-source-break/
@@ -510,4 +517,63 @@ std::vector<Symbol> Debugger::lookupSymbol(const std::string& name) {
   }
 
   return symbols;
+}
+
+// Debugger Part 8: Stack unwinding
+
+//  1. The most robust way to do this is to parse the .eh_frame section of the ELF file and work out
+//  how to unwind the stack from there.
+//  2. To use libunwind or something similar (step 1) to do it for you.
+//  3. Walk the stack manually
+//  Idea:
+//    Assume that the compiler has laid out the stack in a certain.
+//    In order to do this, we first need to understand how the stack is laid out:
+
+//             High
+//        |   ...   |
+//        +---------+
+//     +24|  Arg 1  |
+//        +---------+
+//     +16|  Arg 2  |
+//        +---------+
+//     + 8| Return  |
+//        +---------+
+//EBP+--> |Saved EBP|
+//        +---------+
+//     - 8|  Var 1  |
+//        +---------+
+//ESP+--> |  Var 2  |
+//        +---------+
+//        |   ...   |
+//            Low
+
+// lambda replacement
+//void Debugger::logBacktraceLine(const dwarf::die& func_dwarf_addr) {
+//  static uint32_t frame_number = 0;
+//  std::cout << "frame #" << frame_number++ << ": 0x" << dwarf::at_low_pc(func_dwarf_addr)
+//            << ' ' << dwarf::at_name(func_dwarf_addr) << std::endl;
+//}
+
+void Debugger::printBacktrace() {
+  auto output_frame = [frame_number = 0] (auto&& func) mutable {
+    std::cout << "frame #" << frame_number++ << ": 0x" << dwarf::at_low_pc(func)
+              << ' ' << dwarf::at_name(func) << std::endl;
+  };
+  dwarf::die current_func = getFunctionFromPc(getPc());
+  output_frame(current_func);
+
+  uint64_t frame_pointer = getRegisterValue(m_pid, Reg::rbp);
+  uint64_t return_address = Ptrace::readMemory(m_pid, frame_pointer + 8);
+
+  // Options:
+  // 1. To keep unwinding until the debugger hits main
+  // 2. To stop when the frame pointer is 0x0, which will get you the functions which your implementation
+  // called before main as well.
+  // Idea:
+  //  To grab the frame pointer and return address from each frame and print out the information as we go.
+  while (dwarf::at_name(current_func) != "main") {
+    current_func = getFunctionFromPc(return_address);
+    output_frame(current_func);
+    return_address = unwindFramePointer(frame_pointer);
+  }
 }
