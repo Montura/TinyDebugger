@@ -1,3 +1,5 @@
+#pragma once
+
 #include "dwarf++.hh"
 #include "registers.h"
 #include "ptrace_impl.h"
