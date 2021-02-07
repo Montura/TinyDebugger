@@ -4,6 +4,12 @@
 #include <sys/user.h>
 #include <csignal>
 
+#if __APPLE__
+  #define PTRACE_PEEKDATA PT_READ_D
+  #define PTRACE_POKEDATA PT_WRITE_D
+  #define PTRACE_SINGLESTEP PT_STEP
+#endif
+
 namespace Ptrace {
   void traceMe();
   void continueExec(pid_t m_pid);

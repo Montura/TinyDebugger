@@ -179,7 +179,7 @@ void Debugger::dispose()  {
 // https://blog.tartanllama.xyz/writing-a-linux-debugger-registers/
 
 void Debugger::dumpRegisters() {
-  for (const auto& rd : globalRegisterDescriptors) {
+  for (const auto& rd : GLOBAL_REGISTER_DESC_TABLE) {
     std::cout << rd.name << " 0x" << std::setfill('0') << std::setw(16)
               << std::hex << getRegisterValue(m_pid, rd.r)
               << std::endl;
@@ -339,6 +339,10 @@ void Debugger::handleSigtrap(siginfo_t const& info) {
     case SI_KERNEL:
     case TRAP_BRKPT:
     {
+      // 1. The processor always increments the PC when it executes an instruction. The INT3 is no exception.
+      // It has byte length 1, and thus when the processor executes it, it increments PC by one and then stops (because the OS traps).
+      // 2. Therefore when the debugger is notified, the debugee's PC is already one byte after the breakpoint and
+      // you have to move PC one byte back.
       setPc(getPc() - 1); // put the pc back where it should be
       std::cout << "Hit breakpoint at address " << std::hex << getPc() << std::endl;
       auto line_entry = getLineEntryFromPc(getPc());

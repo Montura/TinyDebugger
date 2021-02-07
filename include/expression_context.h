@@ -13,7 +13,7 @@ public:
     m_load_address(m_load_address)
   {}
 
-  dwarf::taddr reg (uint32_t regnum) override;
+  dwarf::taddr reg (uint32_t dwarfRNum) override;
   dwarf::taddr pc() override;
   dwarf::taddr deref_size (dwarf::taddr address, uint32_t size) override;
 };

@@ -20,7 +20,7 @@ enum class Reg : uint64_t {
 
 // Debug With Arbitrary Record Format (DWARF) debugging format for the AMD64 processor family
 // DWARF register numbers:
-//  https://www.uclibc.org/docs/psABI-x86_64.pdf, Volume 3.6 DWARF Definition, p. 55
+//  https://www.uclibc.org/docs/psABI-x86_64.pdf, Volume 3.6 DWARF Definition, p. 57
 struct RegDescriptor {
   Reg r;
   int32_t dwarf_r;
@@ -62,7 +62,7 @@ struct RegDescriptor {
 
 // The layout of the registers in the vector is important!
 // It must conform user_regs_struct in <sys/user.h>
-constexpr std::array<RegDescriptor, n_registers> globalRegisterDescriptors =
+constexpr std::array<RegDescriptor, n_registers> GLOBAL_REGISTER_DESC_TABLE =
     {{
          {Reg::r15, 15, "r15"},
          {Reg::r14, 14, "r14"},
@@ -103,17 +103,15 @@ typedef std::function<bool(RegDescriptor)> LambdaPredicate;
 //    bool operator()(const RegDescriptor &arg) const { return arg.r == reg; }
 //  };
 
-uint64_t* getUserRegisterByOffset(user_regs_struct& userRegs, const RegDescriptor* const pos);
+const RegDescriptor* findRegisterDescription(LambdaPredicate const& predicate);
 
-const RegDescriptor* findRegDescInGlobalRegisterTable(LambdaPredicate const& predicate);
-
-uint64_t* findRegInUserRegisterTable(pid_t pid, const Reg& r, user_regs_struct& userRegs);
+uint64_t* findRegister(pid_t pid, const Reg& r, user_regs_struct& userRegs);
 
 uint64_t getRegisterValue(pid_t pid, Reg const& r);
 
 void setRegisterValue(pid_t pid, Reg const& r, uint64_t value);
 
-uint64_t getRegisterValueFromDwarfRegister(pid_t pid, int regDwarfValue);
+uint64_t getRegisterValueFromDwarfRegister(pid_t pid, int dwarfRNum);
 
 std::string_view getRegisterName(Reg r);
 

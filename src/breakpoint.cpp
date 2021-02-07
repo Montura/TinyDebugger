@@ -1,11 +1,6 @@
 #include "breakpoint.h"
 #include "ptrace_impl.h"
 
-#if __APPLE__
-#define PTRACE_PEEKDATA PT_READ_D
-#define PTRACE_POKEDATA PT_WRITE_D
-#endif
-
 void BreakPoint::enable() {
   uint64_t data = Ptrace::readMemory(m_pid, m_addr);
   if (data) {
