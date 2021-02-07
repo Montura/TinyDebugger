@@ -49,7 +49,7 @@ public:
   //    1. http://www.dwarfstd.org/doc/Debugging%20using%20DWARF-2012.pdf
   //    2. https://blog.tartanllama.xyz/writing-a-linux-debugger-elf-dwarf/
   dwarf::die getFunctionFromPc(uint64_t pc);
-  dwarf::line_table::iterator getLineEntryFromPc(const uint64_t& pc, bool need_offset = true);
+  dwarf::line_table::iterator getLineEntryFromPc(const uint64_t& pc, bool apply_load_address_offset = true);
 
   void initializeLoadAddress();
   uint64_t offsetLoadAddress(uint64_t addr);

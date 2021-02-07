@@ -223,7 +223,7 @@ void Debugger::waitForSignal() {
       handleSigtrap(siginfo);
       break;
     case SIGSEGV:
-      std::cout << "Yay, segfault. Reason: " << siginfo.si_code << std::endl;
+      std::cout << "Segmentation fault signal. Reason: " << siginfo.si_code << std::endl;
       break;
     default:
       std::cout << "Got signal " << strsignal(siginfo.si_signo) << std::endl;
@@ -233,6 +233,9 @@ void Debugger::waitForSignal() {
 // Debugger Part 5: Source and signals
 // https://blog.tartanllama.xyz/writing-a-linux-debugger-source-signal/
 
+// Idea:
+//  1, Iterate through compilation units until you find the one containing the program counter.
+//  2. Iterating through the children until we find the relevant function (DW_TAG_subprogram).
 dwarf::die Debugger::getFunctionFromPc(uint64_t pc) {
   auto offset_pc = offsetLoadAddress(pc); // remember to offset the pc for querying DWARF
 
@@ -252,15 +255,18 @@ dwarf::die Debugger::getFunctionFromPc(uint64_t pc) {
   throw std::out_of_range{"Cannot find function"};
 }
 
-dwarf::line_table::iterator Debugger::getLineEntryFromPc(const uint64_t& pc, bool need_offset) {
-  auto offset_pc = need_offset ? offsetLoadAddress(pc) : pc; // remember to offset the pc for querying DWARF
+// Idea:
+//  1, Iterate through compilation units until you find the one containing the program counter.
+//  2. Iterating through the children until we find the relevant line entry.
+dwarf::line_table::iterator Debugger::getLineEntryFromPc(const uint64_t& pc, bool apply_load_address_offset) {
+  auto offset_pc = apply_load_address_offset ? offsetLoadAddress(pc) : pc; // remember to offset the pc for querying DWARF
 
 //  std::cerr  << "getLineEntryFromPc, pc = " << offset_pc << "\n";
   for (auto &compilationUnit : m_dwarf.compilation_units()) {
     if (die_pc_range(compilationUnit.root()).contains(offset_pc)) {
-      const auto &tableLine = compilationUnit.get_line_table();
-      auto it = tableLine.find_address(offset_pc);
-      if (it == tableLine.end()) {
+      const dwarf::line_table& lineTable = compilationUnit.get_line_table();
+      auto it = lineTable.find_address(offset_pc);
+      if (it == lineTable.end()) {
         throw std::out_of_range { "Cannot find line entry" };
       } else {
         return it;
@@ -285,6 +291,8 @@ void Debugger::initializeLoadAddress() {
   }
 }
 
+// Addresses based on where the binary was loaded, but the original binary may be position-independent and use offsets as addresses.
+// -> We need to offset the address so it’s using the right base.
 uint64_t Debugger::offsetLoadAddress(uint64_t addr) {
   return addr - m_load_address;
 }
@@ -343,7 +351,7 @@ void Debugger::handleSigtrap(siginfo_t const& info) {
       // It has byte length 1, and thus when the processor executes it, it increments PC by one and then stops (because the OS traps).
       // 2. Therefore when the debugger is notified, the debugee's PC is already one byte after the breakpoint and
       // you have to move PC one byte back.
-      setPc(getPc() - 1); // put the pc back where it should be
+      setPc(getPc() - 1);
       std::cout << "Hit breakpoint at address " << std::hex << getPc() << std::endl;
       auto line_entry = getLineEntryFromPc(getPc());
       printSource(line_entry->file->path, line_entry->line);
