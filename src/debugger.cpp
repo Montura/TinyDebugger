@@ -2,6 +2,7 @@
 #include <vector>
 #include <iomanip>
 #include <fstream>
+#include <sstream>
 
 #if __linux__
   #include <wait.h>
