@@ -297,6 +297,7 @@ uint64_t Debugger::offsetLoadAddress(uint64_t addr) {
   return addr - m_load_address;
 }
 
+// A helper to offset addresses from DWARF info by the load address:
 uint64_t Debugger::offsetDwarfAddress(uint64_t dwarf_addr) {
   return dwarf_addr + m_load_address;
 }
@@ -374,17 +375,16 @@ void Debugger::singleStepInstruction() {
   waitForSignal();
 }
 
+// Ensures that any breakpoints are disabled and re-enabled.
 void Debugger::singleStepInstructionWithBreakpointCheck() {
-  // first, check to see if we need to disable and enable a breakpoint
   if (m_breakpoints.count(getPc())) {
-//    std::cout << "stepOverBreakpoint\n";
     stepOverBreakpoint();
   } else {
-//    std::cout << "singleStepInstruction\n";
     singleStepInstruction();
   }
 }
 
+// Set a breakpoint at the return address of the function and continue.
 void Debugger::stepOut() {
   uint64_t return_address = getReturnAddress();
 
@@ -409,6 +409,7 @@ void Debugger::removeBreakpoint(uint64_t addr) {
   m_breakpoints.erase(addr);
 }
 
+// Just keep on stepping over instructions until we get to a new line.
 void Debugger::stepIn() {
   const uint64_t pc = getPc();
   auto dwarf_table_line = getLineEntryFromPc(pc)->line;
@@ -421,16 +422,14 @@ void Debugger::stepIn() {
   printSource(line_entry->file->path, line_entry->line);
 }
 
-// Real debuggers will often examine what instruction is being executed and
-// work out all of the possible branch targets, then set breakpoints on all of them.
-// We’ll need to come up with a simpler solution.
+// Real debuggers will often examine what instruction is being executed and work out all of the possible branch targets,
+// then set breakpoints on all of them.
+// Two approaches:
 //  1) Stepping until we’re at a new line in the current function
 //  2) To set a breakpoint at every line in the current function.
 // Solution:
-//  Consider the 1st one.
-//  If we’re stepping over a function call, we need to single step through every single instruction
-//  in that call graph.
-//  So use the 2nd approach
+//  - If we’re stepping over a function call, we need to single step through every single instruction in that call graph.
+//  - So use the 2nd approach
 void Debugger::stepOver() {
   const uint64_t pc = getPc();
   dwarf::die const func_die = getFunctionFromPc(pc);
@@ -442,7 +441,7 @@ void Debugger::stepOver() {
 
   std::vector<uint64_t> to_delete;
 
-  while(curr_line->address < func_end) {
+  while (curr_line->address < func_end) {
     const uint64_t current_address = curr_line->address;
     const uint64_t load_address = offsetDwarfAddress(current_address);
     if (current_address != start_line->address && !m_breakpoints.count(load_address)) {
