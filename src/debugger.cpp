@@ -153,12 +153,19 @@ void Debugger::continueExecution() {
 // Debugger Part 2: Breakpoints
 // https://blog.tartanllama.xyz/writing-a-linux-debugger-breakpoints/
 
+// Breakpoints:
+//  - hardware (typically involve setting architecture-specific registers to produce your breaks for you)
+//  - software (involve modifying the code which is being executed on the fly)
+// Idea:
+//    Focusing on software breakpoints for this article, as they are simpler and you can have as many as you want.
+// P.S> On x86 you can only have four hardware breakpoints set at a given time, but they give you the power to make them
+// fire on reading from or writing to a given address rather than only executing code there.
+
 void Debugger::setBreakpointAtAddress(uint64_t addr) {
-  std::cout << "Set BreakPoint at address " << std::hex << addr << std::endl;
+  std::cout << "Set breakpoint at the address " << std::hex << addr << std::endl;
   BreakPoint bp {m_pid, addr};
   bp.enable();
   m_breakpoints[addr] = bp;
-//  std::cout << "Added break point bp " << bp.getAddress() << ", map size = " << m_breakpoints.size() << "\n";
 }
 
 void Debugger::dispose()  {
@@ -181,18 +188,18 @@ void Debugger::dumpRegisters() {
 
 uint64_t Debugger::getPc() {
   const uint64_t value = getRegisterValue(m_pid, Reg::rip);
-  std::cout << "getPc, pc = " << value << "\n";
+//  std::cout << "getPc, pc = " << value << "\n";
   return value;
 }
 
 void Debugger::setPc(uint64_t pc) {
-  std::cout << "setPc, pc = " << pc << "\n";
+//  std::cout << "setPc, pc = " << pc << "\n";
   setRegisterValue(m_pid, Reg::rip, pc);
 }
 
 void Debugger::stepOverBreakpoint() {
   const uint64_t pc = getPc();
-  std::cout << "stepOverBreakpoint, pc = " << pc << "\n";
+//  std::cout << "stepOverBreakpoint, pc = " << pc << "\n";
   if (m_breakpoints.count(pc)) {
     auto& bp = m_breakpoints[pc];
     if (bp.isEnabled()) {
@@ -229,7 +236,7 @@ void Debugger::waitForSignal() {
 dwarf::die Debugger::getFunctionFromPc(uint64_t pc) {
   auto offset_pc = offsetLoadAddress(pc); // remember to offset the pc for querying DWARF
 
-  std::cerr  << "getFunctionFromPc, pc = " << offset_pc << "\n";
+//  std::cerr  << "getFunctionFromPc, pc = " << offset_pc << "\n";
   // We find the correct compilation unit, then ask the line table to get us the relevant entry.
   for (const auto &compilationUnit : m_dwarf.compilation_units()) {
     if (die_pc_range(compilationUnit.root()).contains(offset_pc)) {
@@ -358,10 +365,10 @@ void Debugger::singleStepInstruction() {
 void Debugger::singleStepInstructionWithBreakpointCheck() {
   // first, check to see if we need to disable and enable a breakpoint
   if (m_breakpoints.count(getPc())) {
-    std::cout << "stepOverBreakpoint\n";
+//    std::cout << "stepOverBreakpoint\n";
     stepOverBreakpoint();
   } else {
-    std::cout << "singleStepInstruction\n";
+//    std::cout << "singleStepInstruction\n";
     singleStepInstruction();
   }
 }

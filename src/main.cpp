@@ -16,6 +16,16 @@ int main(int argc, char** argv) {
 
   auto programm = argv[1];
 
+// Test a breakpoint setting on some address:
+//    1. Use objdump -d <exe> -o dump
+//    2. Open dump and find the main function and locate the instruction which you want to set the breakpoint on.
+//    3. However, these addresses may not be absolute.
+//    4. If the program is compiled as a position independent executable, then they are offsets from the address which
+//   the binary is loaded at.
+//    5. Due to address space layout randomization this load address will change with each run of the program.
+// Solution:
+//    To disable address space layout randomization for the programs we launch, and look up the correct load address.
+//    So call to personality(ADDR_NO_RANDOMIZE) before we call execute_debugee in the child process (main.cpp:33)
   auto pid = fork();
   if (pid == 0) {
     std::cout << "Hello from debugee, pid " << getpid() << "\n";
