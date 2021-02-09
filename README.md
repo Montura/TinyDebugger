@@ -8,8 +8,8 @@ Inspired by https://blog.tartanllama.xyz/writing-a-linux-debugger-setup/
 ### Platform support 
 | Platform | Support |
 |----------|---------|
-| Windows	 |   yes	 |
-| Linux		 |   no    |
+| Windows	 |   no	 |
+| Linux		 |   yes    |
 | Mac OS X |	 no		 |
 
 ### Terminal commands 
