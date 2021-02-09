@@ -5,8 +5,15 @@ Writing a tiny debuuger.
 
 Inspired by https://blog.tartanllama.xyz/writing-a-linux-debugger-setup/
 
+### Platform support 
+| Platform | Support |
+|----------|---------|
+| Windows	 |   yes	 |
+| Linux		 |   no    |
+| Mac OS X |	 no		 |
 
-| Terminal commands  | Help |
+### Terminal commands 
+| Commands  | Help |
 | ------------- | ------------- |
 | continue  | Continue debugee execution  |
 | break     |  <table>  <thead>  <th>  Set break point at </th>  <th>Format</th>  </tr>  </thead>  <tbody>  <tr>  <td>Addres</td>  <td>0x555555554656</td>  </tr>  <tr>  <td>Function name</td>  <td>test</td>  </tr>  <tr>  <td>Source line</td>  <td>main.cpp:22</td>  </tr> </tbody>  </table>  |
